@@ -50,9 +50,31 @@ class AuthServiceTest {
         when(userDAO.save(org.mockito.ArgumentMatchers.any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        UserDTO result = authService.createUser(email);
+        UserDTO result = authService.createUser(email, "Provider Name", "provider123");
 
-        assertThat(result.email()).isEqualTo(email);
+        assertThat(result.getEmail()).isEqualTo(email);
+        verify(userDAO).save(org.mockito.ArgumentMatchers.any(User.class));
+    }
+
+
+    @Test
+    void updateProvider_shouldUpdateUser_andReturnUpdatedDTO() {
+        String email = "jane.doe@example.com";
+        String providerId = "provider123";
+        String provider = "Provider Name";
+        User existingUser = new User(email);
+        when(userDAO.findByEmail(email)).thenReturn(Optional.of(existingUser));
+        when(userDAO.save(org.mockito.ArgumentMatchers.any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserDTO result = authService.updateProvider(email, provider, providerId);
+
+        assertThat(result.getEmail()).isEqualTo(email);
+        assertThat(result.getProviderId()).isEqualTo(providerId);
+        assertThat(result.getProvider()).isEqualTo(provider);
         verify(userDAO).save(org.mockito.ArgumentMatchers.any(User.class));
     }
 }
+
+
+    
