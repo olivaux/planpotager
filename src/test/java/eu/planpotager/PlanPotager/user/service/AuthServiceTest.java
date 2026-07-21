@@ -52,7 +52,7 @@ class AuthServiceTest {
 
         UserDTO result = authService.createUser(email, "Provider Name", "provider123");
 
-        assertThat(result.getEmail()).isEqualTo(email);
+        assertThat(result.email()).isEqualTo(email);
         verify(userDAO).save(org.mockito.ArgumentMatchers.any(User.class));
     }
 
@@ -69,9 +69,9 @@ class AuthServiceTest {
 
         UserDTO result = authService.updateProvider(email, provider, providerId);
 
-        assertThat(result.getEmail()).isEqualTo(email);
-        assertThat(result.getProviderId()).isEqualTo(providerId);
-        assertThat(result.getProvider()).isEqualTo(provider);
+        assertThat(result.email()).isEqualTo(email);
+        assertThat(result.providerId()).isEqualTo(providerId);
+        assertThat(result.provider()).isEqualTo(provider);
         verify(userDAO).save(org.mockito.ArgumentMatchers.any(User.class));
     }
 }
