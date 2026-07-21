@@ -1,6 +1,8 @@
 CREATE TABLE User_(
    email VARCHAR(50) ,
    unit VARCHAR(2) ,
+   provider VARCHAR(20) ,
+   provider_id VARCHAR(255) ,
    language_ VARCHAR(2) ,
    PRIMARY KEY(email)
 );
@@ -110,12 +112,13 @@ CREATE TABLE Plant(
 );
 
 CREATE TABLE Notification(
-   email VARCHAR(50) ,
    id_notif INT AUTO_INCREMENT,
+   email VARCHAR(50)  NOT NULL,
    isRead BOOLEAN,
    message VARCHAR(50) ,
-   PRIMARY KEY(email, id_notif),
-   KEY idx_notif_id (id_notif),
+   type VARCHAR(50) ,
+   created_at DATETIME,
+   PRIMARY KEY(id_notif),
    FOREIGN KEY(email) REFERENCES User_(email)
 );
 
