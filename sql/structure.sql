@@ -8,25 +8,26 @@ CREATE TABLE User_(
 );
 
 CREATE TABLE Garden(
-   id_garden INT AUTO_INCREMENT,
-   location_Longitude DECIMAL(9,7)  ,
-   location_Latitude DECIMAL(9,7)  ,
+   id_garden BIGINT AUTO_INCREMENT,
+   name VARCHAR(50)  NOT NULL,
+   location_Longitude DOUBLE  ,
+   location_Latitude DOUBLE  ,
    email VARCHAR(50)  NOT NULL,
    PRIMARY KEY(id_garden),
    FOREIGN KEY(email) REFERENCES User_(email)
 );
 
 CREATE TABLE Area(
-   id_area INT AUTO_INCREMENT,
-   point_leftUp_x DECIMAL(5,2)  ,
-   point_leftUp_y DECIMAL(5,2)  ,
-   point_rightUp_x DECIMAL(5,2)  ,
-   point_rightUp_y DECIMAL(5,2)  ,
-   point_rightDown_x DECIMAL(5,2)  ,
-   point_rightDown_y DECIMAL(5,2)  ,
-   point_leftDown_x DECIMAL(5,2)  ,
-   point_leftDown_y DECIMAL(5,2)  ,
-   id_garden INT NOT NULL,
+   id_area BIGINT AUTO_INCREMENT,
+   point_leftUp_x DOUBLE  ,
+   point_leftUp_y DOUBLE  ,
+   point_rightUp_x DOUBLE  ,
+   point_rightUp_y DOUBLE  ,
+   point_rightDown_x DOUBLE  ,
+   point_rightDown_y DOUBLE  ,
+   point_leftDown_x DOUBLE  ,
+   point_leftDown_y DOUBLE  ,
+   id_garden BIGINT NOT NULL,
    PRIMARY KEY(id_area),
    FOREIGN KEY(id_garden) REFERENCES Garden(id_garden)
 );
@@ -45,12 +46,12 @@ CREATE TABLE Family(
 
 CREATE TABLE Species(
    name_species VARCHAR(50) ,
-   radius DECIMAL(5,2)  ,
+   radius DOUBLE  ,
    name_icon VARCHAR(50) ,
-   plantation_start TINYINT,
-   plantation_end TINYINT,
-   harvest_start TINYINT,
-   harvest_end TINYINT,
+   plantation_start INT,
+   plantation_end INT,
+   harvest_start INT,
+   harvest_end INT,
    name_family VARCHAR(50)  NOT NULL,
    PRIMARY KEY(name_species),
    FOREIGN KEY(name_family) REFERENCES Family(name_family)
@@ -58,19 +59,19 @@ CREATE TABLE Species(
 
 CREATE TABLE Variety(
    name_variety VARCHAR(50) ,
-   radius DECIMAL(5,2)  ,
+   radius DOUBLE  ,
    name_icon VARCHAR(50) ,
-   plantation_start TINYINT,
-   plantation_end TINYINT,
-   harvest_start TINYINT,
-   harvest_end TINYINT,
+   plantation_start INT,
+   plantation_end INT,
+   harvest_start INT,
+   harvest_end INT,
    name_species VARCHAR(50)  NOT NULL,
    PRIMARY KEY(name_variety),
    FOREIGN KEY(name_species) REFERENCES Species(name_species)
 );
 
 CREATE TABLE SeedPacket(
-   id_seedpacket INT AUTO_INCREMENT,
+   id_seedpacket BIGINT AUTO_INCREMENT,
    brand VARCHAR(50) ,
    date_expiration DATE,
    reference VARCHAR(50) ,
@@ -82,7 +83,7 @@ CREATE TABLE SeedPacket(
 );
 
 CREATE TABLE Article(
-   id_article INT AUTO_INCREMENT,
+   id_article BIGINT AUTO_INCREMENT,
    title VARCHAR(100)  NOT NULL,
    link VARCHAR(100) ,
    name_content VARCHAR(50) ,
@@ -98,21 +99,23 @@ CREATE TABLE Article(
 );
 
 CREATE TABLE Plant(
-   id_plant INT AUTO_INCREMENT,
-   position_ GEOMETRY,
+   id_plant BIGINT AUTO_INCREMENT,
+   x INT,
+   y INT,
+   state VARCHAR(20),
    date_toPlant DATE,
    date_planted DATE,
    date_toHarvest DATE,
    date_harvested DATE,
-   id_garden INT NOT NULL,
-   id_seedpacket INT NOT NULL,
+   id_garden BIGINT NOT NULL,
+   id_seedpacket BIGINT NOT NULL,
    PRIMARY KEY(id_plant),
    FOREIGN KEY(id_garden) REFERENCES Garden(id_garden),
    FOREIGN KEY(id_seedpacket) REFERENCES SeedPacket(id_seedpacket)
 );
 
 CREATE TABLE Notification(
-   id_notif INT AUTO_INCREMENT,
+   id_notif BIGINT AUTO_INCREMENT,
    email VARCHAR(50)  NOT NULL,
    isRead BOOLEAN,
    message VARCHAR(50) ,
