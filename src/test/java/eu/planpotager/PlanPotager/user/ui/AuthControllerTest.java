@@ -9,13 +9,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import eu.planpotager.PlanPotager.config.SecurityConfig;
 import eu.planpotager.PlanPotager.user.dto.UserDTO;
+import eu.planpotager.PlanPotager.user.service.CustomOidcUserService;
 import eu.planpotager.PlanPotager.user.service.ProfileService;
 
 @WebMvcTest(AuthController.class)
+@Import(SecurityConfig.class)
 class AuthControllerTest {
 
     private static final String EMAIL = "jane.doe@example.com";
@@ -25,6 +29,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private ProfileService profileService;
+
+    @MockitoBean
+    private CustomOidcUserService customOidcUserService;
 
     @Test
     void me_shouldReturnCurrentUserProfile_whenAuthenticated() throws Exception {
