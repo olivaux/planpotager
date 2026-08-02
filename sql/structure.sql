@@ -50,8 +50,7 @@ CREATE TABLE Species(
    name_icon VARCHAR(50) ,
    plantation_start INT,
    plantation_end INT,
-   harvest_start INT,
-   harvest_end INT,
+   harvest_duration INT,
    name_family VARCHAR(50)  NOT NULL,
    PRIMARY KEY(name_species),
    FOREIGN KEY(name_family) REFERENCES Family(name_family)
@@ -63,8 +62,7 @@ CREATE TABLE Variety(
    name_icon VARCHAR(50) ,
    plantation_start INT,
    plantation_end INT,
-   harvest_start INT,
-   harvest_end INT,
+   harvest_duration INT,
    name_species VARCHAR(50)  NOT NULL,
    PRIMARY KEY(name_variety),
    FOREIGN KEY(name_species) REFERENCES Species(name_species)
