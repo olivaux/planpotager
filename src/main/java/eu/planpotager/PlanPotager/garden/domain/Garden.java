@@ -1,5 +1,7 @@
 package eu.planpotager.PlanPotager.garden.domain;
 
+import eu.planpotager.PlanPotager.garden.dto.AreaDTO;
+import eu.planpotager.PlanPotager.plant.domain.Plant;
 import eu.planpotager.PlanPotager.user.domain.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -34,9 +36,11 @@ public class Garden {
     @JoinColumn(name = "email")
     private User user;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "id_garden")
+    @OneToMany(mappedBy = "garden", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GardenPlant> gardenPlants = new ArrayList<>();
+
+    @OneToMany(mappedBy = "garden", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Area> areas = new ArrayList<>();
 
     protected Garden() {
     }
@@ -84,23 +88,46 @@ public class Garden {
         return gardenPlants;
     }
 
-    public void addPlant(Long plantId, int x, int y) {
-        throw new UnsupportedOperationException("not implemented yet");
+    public void addPlant(Plant plant, int x, int y) {
+        gardenPlants.add(new GardenPlant(this, plant, x, y));
     }
 
     public GardenPlant findPlant(Long plantId) {
-        throw new UnsupportedOperationException("not implemented yet");
+        return gardenPlants.stream()
+                .filter(gardenPlant -> gardenPlant.getPlant().getId().equals(plantId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Plant not found in the garden"));
     }
 
     public void updatePlantPosition(Long plantId, int newX, int newY) {
-        throw new UnsupportedOperationException("not implemented yet");
+        GardenPlant gardenPlant = findPlant(plantId);
+        gardenPlant.setPosition(newX, newY);
     }
 
     public void setPlantState(Long plantId, PlantState state) {
-        throw new UnsupportedOperationException("not implemented yet");
+        GardenPlant gardenPlant = findPlant(plantId);
+        gardenPlant.setState(state);
     }
 
     public void removePlant(Long plantId) {
-        throw new UnsupportedOperationException("not implemented yet");
+        GardenPlant gardenPlant = findPlant(plantId);
+        gardenPlants.remove(gardenPlant);
     }
+
+    public void addArea(AreaDTO points) {
+        new Area(this, points);
+    }
+
+    public void updateArea(Long areaId, AreaDTO points) {
+        Area area = findArea(areaId);
+        area.setPoints(points);
+    }
+
+    private Area findArea(Long areaId) {
+        return areas.stream()
+                .filter(area -> area.getId().equals(areaId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Area not found in the garden"));
+    }
+
 }

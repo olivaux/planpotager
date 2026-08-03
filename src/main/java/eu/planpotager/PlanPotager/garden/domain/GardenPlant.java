@@ -31,10 +31,15 @@ public class GardenPlant {
     @JoinColumn(name = "id_seedpacket")
     private Plant plant;
 
+    @ManyToOne 
+    @JoinColumn(name = "id_garden", nullable = false) 
+    private Garden garden;
+
     protected GardenPlant() {
     }
 
-    public GardenPlant(Plant plant, int x, int y) {
+    public GardenPlant(Garden garden, Plant plant, int x, int y) {
+        this.garden = garden;
         this.plant = plant;
         this.x = x;
         this.y = y;

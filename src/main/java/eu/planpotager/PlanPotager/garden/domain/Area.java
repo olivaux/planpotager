@@ -1,5 +1,6 @@
 package eu.planpotager.PlanPotager.garden.domain;
 
+import eu.planpotager.PlanPotager.garden.dto.AreaDTO;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -62,6 +63,19 @@ public class Area {
         this.leftDownY = leftDownY;
     }
 
+    public Area(Garden garden, AreaDTO points) {
+        this.garden = garden;
+        this.leftUpX = points.leftUpX();
+        this.leftUpY = points.leftUpY();
+        this.rightUpX = points.rightUpX();
+        this.rightUpY = points.rightUpY();
+        this.rightDownX = points.rightDownX();
+        this.rightDownY = points.rightDownY();
+        this.leftDownX = points.leftDownX();
+        this.leftDownY = points.leftDownY();
+    }
+
+
     public Long getId() {
         return id;
     }
@@ -112,5 +126,16 @@ public class Area {
         this.rightDownY = rightDownY;
         this.leftDownX = leftDownX;
         this.leftDownY = leftDownY;
+    }
+
+    public void setPoints(AreaDTO points) {
+        this.leftUpX = points.leftUpX();
+        this.leftUpY = points.leftUpY();
+        this.rightUpX = points.rightUpX();
+        this.rightUpY = points.rightUpY();
+        this.rightDownX = points.rightDownX();
+        this.rightDownY = points.rightDownY();
+        this.leftDownX = points.leftDownX();
+        this.leftDownY = points.leftDownY();
     }
 }
