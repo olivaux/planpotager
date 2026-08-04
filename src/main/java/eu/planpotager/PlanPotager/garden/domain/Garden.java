@@ -1,6 +1,5 @@
 package eu.planpotager.PlanPotager.garden.domain;
 
-import eu.planpotager.PlanPotager.garden.dto.AreaDTO;
 import eu.planpotager.PlanPotager.plant.domain.Plant;
 import eu.planpotager.PlanPotager.user.domain.User;
 import jakarta.persistence.CascadeType;
@@ -38,9 +37,6 @@ public class Garden {
 
     @OneToMany(mappedBy = "garden", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GardenPlant> gardenPlants = new ArrayList<>();
-
-    @OneToMany(mappedBy = "garden", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Area> areas = new ArrayList<>();
 
     protected Garden() {
     }
@@ -112,22 +108,6 @@ public class Garden {
     public void removePlant(Long plantId) {
         GardenPlant gardenPlant = findPlant(plantId);
         gardenPlants.remove(gardenPlant);
-    }
-
-    public void addArea(AreaDTO points) {
-        new Area(this, points);
-    }
-
-    public void updateArea(Long areaId, AreaDTO points) {
-        Area area = findArea(areaId);
-        area.setPoints(points);
-    }
-
-    private Area findArea(Long areaId) {
-        return areas.stream()
-                .filter(area -> area.getId().equals(areaId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Area not found in the garden"));
     }
 
 }

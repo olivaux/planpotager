@@ -12,7 +12,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-// Divergence LDD documentee (specs/03_Conception_V1.0.md) : mappe sur la table SQL Plant (x/y remplacent position_ GEOMETRY).
+
 @Entity
 @Table(name = "Plant")
 public class GardenPlant {
