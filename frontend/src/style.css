@@ -5,6 +5,8 @@
   --border: #e5e4e7;
   --accent-bg: rgba(170, 59, 255, 0.1);
   --accent-border: rgba(170, 59, 255, 0.5);
+  --error: #d0342c;
+  --success: #2c8a3d;
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
@@ -32,4 +34,130 @@ h1 {
 h2 {
   font-size: 20px;
   margin: 0 0 8px;
+}
+
+/* --- Vues : conteneur de page --- */
+
+.page {
+  padding: 32px 20px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.page-narrow {
+  max-width: 420px;
+}
+
+.page-medium {
+  max-width: 480px;
+}
+
+/* --- Listes --- */
+
+.list-reset {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.list-card {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+/* --- Formulaires --- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text);
+}
+
+.field input,
+.field select {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
+/* --- Boutons --- */
+
+.btn {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-h);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  padding: 10px 20px;
+  border: 2px solid var(--accent-border);
+  background: var(--accent-bg);
+}
+
+/* --- Statuts --- */
+
+.error {
+  color: var(--error);
+}
+
+.success {
+  color: var(--success);
+}
+
+/* --- Vues potager (structure partagée entre GardenDetail et GardenStructure) --- */
+
+.garden-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.garden-nav {
+  display: flex;
+  gap: 16px;
+}
+
+.garden-nav a {
+  color: var(--text-h);
+}
+
+.garden-layout {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.garden-sidebar {
+  flex: 0 0 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.canvas-wrapper {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 900px;
+  max-width: 100%;
+  overflow: hidden;
 }

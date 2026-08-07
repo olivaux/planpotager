@@ -104,8 +104,7 @@ public class GardenService {
         checkUserAccess(userEmail, garden);
 
         GardenPlant gardenPlant = garden.findPlant(plantId);
-        return new GardenPlantDTO(gardenPlant.getId(), gardenPlant.getX(), gardenPlant.getY(),
-                gardenPlant.getState(), gardenPlant.getPlant().getId());
+        return toGardenPlantDTO(gardenPlant);
     }
 
     public GardenDTO changePlantPosition(String userEmail, Long gardenId, Long plantId, int newX, int newY) {
@@ -122,6 +121,28 @@ public class GardenService {
 
     public List<PlantState> getAvailableStates() {
         return List.of(PlantState.values());
+    }
+
+    public List<GardenPlantDTO> getGardenPlants(String userEmail, Long gardenId) {
+        Garden garden = gardenDAO.findById(gardenId)
+            .orElseThrow(() -> new IllegalArgumentException("Garden not found"));
+
+        checkUserAccess(userEmail, garden);
+
+        return garden.getGardenPlants().stream()
+            .map(this::toGardenPlantDTO)
+            .toList();
+    }
+
+    public List<AreaDTO> getGardenAreas(String userEmail, Long gardenId) {
+        Garden garden = gardenDAO.findById(gardenId)
+            .orElseThrow(() -> new IllegalArgumentException("Garden not found"));
+
+        checkUserAccess(userEmail, garden);
+
+        return areaDAO.findByGardenId(gardenId).stream()
+            .map(this::toAreaDTO)
+            .toList();
     }
 
     public GardenDTO setPlantState(String userEmail, Long gardenId, Long plantId, PlantState state) {
@@ -182,6 +203,11 @@ public class GardenService {
     private AreaDTO toAreaDTO(Area area) {
         return new AreaDTO(area.getId(), area.getLeftUpX(), area.getLeftUpY(), area.getRightUpX(), area.getRightUpY(),
                 area.getRightDownX(), area.getRightDownY(), area.getLeftDownX(), area.getLeftDownY());
+    }
+
+    private GardenPlantDTO toGardenPlantDTO(GardenPlant gardenPlant) {
+        return new GardenPlantDTO(gardenPlant.getId(), gardenPlant.getX(), gardenPlant.getY(),
+                gardenPlant.getState(), gardenPlant.getPlant().getId());
     }
 
     private void checkUserAccess(String userEmail, Garden garden) {

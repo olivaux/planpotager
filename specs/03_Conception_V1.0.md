@@ -30,11 +30,11 @@
     - [Déploiement](#déploiement)
   - [4. Cas d'utilisation](#4-cas-dutilisation)
     - [Compte](#compte)
-      - [Création du compte](#création-du-compte)
+      - [Connexion via Google (OAuth2 / OIDC)](#connexion-via-google-oauth2--oidc)
         - [Liste des objets candidats](#liste-des-objets-candidats)
         - [Description des interactions entre objets](#description-des-interactions-entre-objets)
         - [Diagramme de classe consolidé pour le Use case](#diagramme-de-classe-consolidé-pour-le-use-case)
-      - [Connexion au compte](#connexion-au-compte)
+      - [Session courante (`GET /api/auth/me`)](#session-courante-get-apiauthme)
         - [Liste des objets candidats](#liste-des-objets-candidats-1)
         - [Description des interactions entre objets](#description-des-interactions-entre-objets-1)
         - [Diagramme de classe consolidé pour le Use case](#diagramme-de-classe-consolidé-pour-le-use-case-1)
@@ -268,21 +268,23 @@ Correspondance boundaries → composants Vue :
 
 | Boundary (analyse) | Composant Vue           | Route           |
 | -------------------- | ------------------------- | ----------------- |
-| SignUpUI           | Auth/SignUp.vue         | /signup         |
-| LoginUI            | Auth/Login.vue          | /login          |
+| LoginUI            | Auth/Login.vue          | /login (déclenche `GET /oauth2/authorization/google`) |
 | ProfileUI          | Profile/Profile.vue     | /profile        |
 | AddPlantUI         | Plant/AddPlant.vue      | /plant/add      |
 | PlantUI            | Plant/Registry.vue      | /plant/Registry |
 | GardenUI           | Garden/GardenList.vue   | /garden         |
 | NewGardenUI        | Garden/NewGarden.vue    | /garden/new     |
-| GardenUI[id]       | Garden/GardenDetail.vue   | /garden/:id     |
+| GardenStructureUI  | Garden/GardenStructure.vue | /garden/:id/structure |
+| GardenDetailUI   | Garden/GardenDetail.vue  | /garden/:id/plants    |
 | NotifUI            | Notif/NotifList.vue       | /notif          |
 | ArticleUI          | Article/ArticleList.vue   | /article        |
 | RegistryUI         | Registry/CatalogView.vue  | /catalog        |
 
+
+
 ### Authentification
 
-L'authentification est gérée via le protocole **OAuth 2.0**. Spring Security prend en charge ce mécanisme nativement.
+L'authentification est **déléguée à un fournisseur d'identité externe** (Google en Phase 1, Facebook différé à une phase ultérieure) via **OAuth 2.0 / OpenID Connect (OIDC)**. PlanPotager tient le rôle de **client OAuth2 (relying party)** — jamais celui de fournisseur d'identité/serveur d'autorisation — et ne reçoit ni ne stocke aucun mot de passe utilisateur. L'identité de l'utilisateur (email, statut `email_verified`) est portée par l'**ID Token** signé que Google renvoie ; Spring Security prend nativement en charge ce mécanisme via `oauth2Login()`.
 
 ### Environnement de développement
 
@@ -502,6 +504,8 @@ actor "Utilisateur PC" as userPC
 actor "Utilisateur Mobile" as userMobile
 actor "Consultant" as consultant
 
+cloud "Google\n(Identity Provider OIDC)" as google
+
 node "Client PC (Windows)" {
   component "Navigateur Web" as browserPC {
     component "Vue.js SPA" as vuePC
@@ -522,7 +526,7 @@ node "Serveur (VPS / local)" {
 
   node "Docker : Application" {
     component "Spring Boot (Tomcat embarqué)" as app {
-      component "Spring Security\n(OAuth 2.0)" as security
+      component "Spring Security\n(OAuth2 Client / OIDC)" as security
       component "RestControllers (@RestController)" as mvc
       component "Services (@Service)" as svc
       component "NotifScheduler (@Scheduled)" as scheduler
@@ -545,6 +549,7 @@ consultant --> dbeaver
 vuePC --> security : HTTPS / API REST JSON
 vueMobile --> security : HTTPS / API REST JSON
 security --> mvc
+security <--> google : redirection OAuth2 login\n+ callback (code, puis ID Token)
 jpa --> dbApp : JDBC / Hibernate
 junit --> dbTest : JDBC / Hibernate
 dbeaver --> dbApp : JDBC (accès direct)
@@ -560,57 +565,154 @@ scheduler --> svc : déclenche (cron 8h00)
 
 ### Compte
 
-#### Création du compte
+⚠️ Cette section a remplacé le flux de signup/login par email (obsolète) suite à la correction de trajectoire documentée dans `temp/arrangement-oauth2-auth.md` : PlanPotager délègue entièrement l'authentification à Google (OAuth2/OIDC), il n'existe plus d'endpoint applicatif `POST /api/auth/signup` ni `POST /api/auth/login`.
+
+#### Connexion via Google (OAuth2 / OIDC)
 
 ##### Liste des objets candidats
 
 
-| Analyse (Arrington)      | Vue.js (Frontend)  | Spring Boot (Backend) | Annotation      |
-| ------------------------ | ------------------ | --------------------- | --------------- |
-| SignUpUI (boundary)      | Auth/SignUp.vue    | AuthController        | @RestController |
-| LoginUI (boundary)       | Auth/Login.vue     | AuthController        | @RestController |
-| SignUpWorkFlow (control) | —                  | AuthService           | @Service        |
-| User (entity)            | —                  | User                  | @Entity         |
-| UserDAO (life cycle)     | —                  | UserDAO               | @Repository     |
+| Analyse (Arrington)             | Vue.js (Frontend) | Spring Boot (Backend)  | Annotation                             |
+| -------------------------------- | ------------------ | ------------------------ | ---------------------------------------- |
+| LoginUI (boundary)              | Auth/Login.vue     | —                        | redirection native Spring Security      |
+| CustomOidcUserService (control) | —                  | CustomOidcUserService   | @Service (implémente `OidcUserService`) |
+| AuthService (control)           | —                  | AuthService             | @Service                                |
+| User (entity)                   | —                  | User                    | @Entity                                 |
+| UserDAO (life cycle)            | —                  | UserDAO                 | @Repository                             |
 
 ##### Description des interactions entre objets
 
 ~~~plantuml
 @startuml
-title Création du compte - API REST + Vue.js
+title Connexion via Google - Délégation OAuth2/OIDC
 skin rose
 
 actor User as u
-boundary "Auth/SignUp.vue\n(Vue.js)" as vue
-boundary "AuthController <<RestController>>" as ctrl
-control "AuthService <<Service>>" as svc
-entity "User <<Entity>>" as en
-participant "UserDAO <<Repository>>" as repo
+boundary "Auth/Login.vue\n(Vue.js)" as vue
+participant "Spring Security\n(oauth2Login)" as sec
+boundary "Google (IdP)" as google
+control "CustomOidcUserService" as oidc
+control "AuthService <<@Service>>" as svc
+participant "UserDAO <<@Repository>>" as repo
 
+u -> vue : clique "Se connecter avec Google"
+vue -> sec : GET /oauth2/authorization/google
+sec -> google : redirection (consentement)
+google --> u : écran de consentement Google
+u -> google : accepte
+google -> sec : callback /login/oauth2/code/google\n+ code d'autorisation
+sec -> google : échange code -> ID Token + claims\n(email, email_verified, sub)
+sec -> oidc : loadUser(OidcUserRequest)
+oidc -> oidc : vérifie email_verified == true
 
-u -> vue : saisit email et soumet
+alt email non vérifié
+oidc --> sec : OAuth2AuthenticationException
+sec --> vue : redirection échec authentification
 
-vue -> ctrl : POST /api/auth/signup\n{ email }
-ctrl -> svc : checkEmail(email)
+else email vérifié
+oidc -> svc : checkEmail(email)
 svc -> repo : findByEmail(email)
 
-alt cas nominal
-repo --> svc : Optional.empty()
-svc --> ctrl : Optional.empty()
-ctrl -> svc : createUser(email)
-svc -> en : new User(email)
-return User
-svc -> repo : save(User)
-return User
-svc --> ctrl : UserDTO
-ctrl --> vue : 201 Created\n{ UserDTO }
-vue -> vue : redirect Vue Router /garden
-
-else compte déjà existant
+alt compte existant
 repo --> svc : Optional<User>
-svc --> ctrl : Optional<User>
-ctrl --> vue : 409 Conflict\n{ message }
-vue -> u : affiche erreur
+svc --> oidc : Optional<User>
+oidc -> svc : updateProvider(email, provider, providerId)\n(fusion silencieuse si l'IdP diffère de celui enregistré)
+
+else compte inexistant
+repo --> svc : Optional.empty()
+svc --> oidc : Optional.empty()
+oidc -> svc : createUser(email, provider, providerId)
+svc -> repo : save(User)
+svc --> oidc : UserDTO
+
+end
+
+oidc --> sec : OidcUser (claims Google)
+sec -> sec : ouvre la session (cookie)
+sec --> vue : redirection /garden
+
+end
+
+@enduml
+~~~
+
+##### Diagramme de classe consolidé pour le Use case
+
+~~~plantuml
+@startuml
+skin rose
+
+class CustomOidcUserService <<@Service>> {
+  + loadUser(userRequest : OidcUserRequest) : OidcUser
+}
+
+class AuthService <<@Service>> {
+  + checkEmail(email : String) : Optional<User>
+  + createUser(email : String, provider : String, providerId : String) : UserDTO
+  + updateProvider(email : String, provider : String, providerId : String) : UserDTO
+}
+
+class User <<@Entity>> {
+  @Id
+  - email : String
+  - unit : String
+  - language : String
+  - provider : String
+  - providerId : String
+}
+
+interface UserDAO <<@Repository>> {
+  + findByEmail(email : String) : Optional<User>
+  + save(user : User) : User
+}
+
+CustomOidcUserService "1" --> "1" AuthService
+AuthService "1" --> "1" UserDAO
+UserDAO "1" ..> "0..*" User
+
+@enduml
+~~~
+
+---
+
+#### Session courante (`GET /api/auth/me`)
+
+Il n'y a plus de flux de login applicatif distinct : l'authentification elle-même est entièrement gérée par la redirection Google décrite ci-dessus. Ce use case couvre uniquement la question "la session est-elle active, et pour quel utilisateur ?", posée par la SPA à son chargement.
+
+##### Liste des objets candidats
+
+
+| Analyse (Arrington)      | Vue.js (Frontend)       | Spring Boot (Backend) | Annotation      |
+| -------------------------- | ------------------------ | --------------------- | --------------- |
+| AuthController (boundary) | App.vue (au chargement) | AuthController        | @RestController |
+| ProfileService (control)  | —                        | ProfileService        | @Service        |
+| User (entity)             | —                        | User                  | @Entity         |
+| UserDAO (life cycle)      | —                        | UserDAO               | @Repository     |
+
+##### Description des interactions entre objets
+
+~~~plantuml
+@startuml
+title Session courante - GET /api/auth/me
+skin rose
+
+actor User as u
+boundary "App.vue\n(Vue.js)" as vue
+boundary "AuthController <<@RestController>>" as ctrl
+control "ProfileService <<@Service>>" as svc
+participant "UserDAO <<@Repository>>" as repo
+
+vue -> ctrl : GET /api/auth/me\n(cookie de session)
+
+alt authentifié
+ctrl -> svc : getProfile(principal.email)
+svc -> repo : findByEmail(email)
+repo --> svc : Optional<User>
+svc --> ctrl : UserDTO
+ctrl --> vue : 200 OK\n{ UserDTO }
+
+else non authentifié
+ctrl --> vue : 401 Unauthorized
 vue -> vue : redirect Vue Router /login
 
 end
@@ -625,96 +727,11 @@ end
 skin rose
 
 class AuthController <<@RestController>> {
-  + signUp(@RequestBody email : String) : ResponseEntity<UserDTO>
-  + login(@RequestBody email : String) : ResponseEntity<UserDTO>
+  + me(principal : OidcUser) : ResponseEntity<UserDTO>
 }
 
-class AuthService <<@Service>> {
-  + checkEmail(email : String) : Optional<User>
-  + createUser(email : String) : UserDTO
-}
-
-class User <<@Entity>> {
-  @Id
-  - email : String
-  - unit : String
-  - language : String
-}
-
-interface UserDAO <<@Repository>> {
-  + findByEmail(email : String) : Optional<User>
-  + save(user : User) : User
-}
-
-AuthController "1" --> "1" AuthService
-AuthService "1" --> "1" UserDAO
-UserDAO "1" ..> "0..*" User
-
-@enduml
-~~~
-
----
-
-#### Connexion au compte
-
-##### Liste des objets candidats
-
-
-| Analyse (Arrington)     | Vue.js (Frontend)  | Spring Boot (Backend) | Annotation      |
-| ------------------------- | ------------------ | --------------------- | --------------- |
-| LoginUI (boundary)      | Auth/Login.vue     | AuthController        | @RestController |
-| SignUpUI (boundary)     | Auth/SignUp.vue    | AuthController        | @RestController |
-| LoginWorkFlow (control) | —                  | AuthService           | @Service        |
-| User (entity)           | —                  | User                  | @Entity         |
-| UserDAO (life cycle)    | —                  | UserDAO               | @Repository     |
-
-##### Description des interactions entre objets
-
-~~~plantuml
-@startuml
-title Connexion au compte - API REST + Vue.js
-skin rose
-
-actor User as u
-boundary "Auth/Login.vue\n(Vue.js)" as vue
-boundary "AuthController <<@RestController>>" as ctrl
-control "AuthService <<@Service>>" as svc
-participant "UserDAO <<@Repository>>" as repo
-
-u -> vue : saisit email et soumet
-vue -> ctrl : POST /api/auth/login\n{ email }
-ctrl -> svc : validateEmail(email)
-svc -> repo : findByEmail(email)
-
-alt cas nominal
-repo --> svc : Optional<User>
-svc --> ctrl : UserDTO
-ctrl --> vue : 200 OK\n{ UserDTO }
-vue -> vue : redirect Vue Router /garden
-
-else compte non existant
-repo --> svc : Optional.empty()
-svc --> ctrl : Optional.empty()
-ctrl --> vue : 404 Not Found\n{ message }
-vue -> vue : redirect Vue Router /signup
-
-end
-
-@enduml
-~~~
-
-##### Diagramme de classe consolidé pour le Use case
-
-~~~plantuml
-@startuml
-skin rose
-
-class AuthController <<@RestController>> {
-  + login(@RequestBody email : String) : ResponseEntity<UserDTO>
-}
-
-class AuthService <<@Service>> {
-  + validateEmail(email : String) : UserDTO
+class ProfileService <<@Service>> {
+  + getProfile(userEmail : String) : UserDTO
 }
 
 class User <<@Entity>> {
@@ -722,14 +739,16 @@ class User <<@Entity>> {
   - email : String
   - unit : String
   - language : String
+  - provider : String
+  - providerId : String
 }
 
 interface UserDAO <<@Repository>> {
   + findByEmail(email : String) : Optional<User>
 }
 
-AuthController "1" --> "1" AuthService
-AuthService "1" --> "1" UserDAO
+AuthController "1" --> "1" ProfileService
+ProfileService "1" --> "1" UserDAO
 UserDAO "1" ..> "0..*" User
 
 @enduml
@@ -797,7 +816,7 @@ repo --> svc : Optional<User>
 svc -> repo : delete(user)
 svc --> ctrl : void
 ctrl --> vue : 204 No Content
-vue -> vue : redirect Vue Router /signup
+vue -> vue : redirect Vue Router /login
 
 @enduml
 ~~~
@@ -825,6 +844,8 @@ class User <<@Entity>> {
   - email : String
   - unit : String
   - language : String
+  - provider : String
+  - providerId : String
 }
 
 interface UserDAO <<@Repository>> {
@@ -927,8 +948,7 @@ class Species <<@Entity>> {
   - radius : Double
   - plantationStart : int
   - plantationEnd : int
-  - harvestStart : int
-  - harvestEnd : int
+  - harvestDuration : int
   @ManyToOne
   - family : Family
   @OneToMany
@@ -941,8 +961,7 @@ class Variety <<@Entity>> {
   - radius : Double
   - plantationStart : int
   - plantationEnd : int
-  - harvestStart : int
-  - harvestEnd : int
+  - harvestDuration : int
   @ManyToOne
   - species : Species
 }
@@ -1163,7 +1182,7 @@ PlantDAO "1" ..> "0..*" Plant
 | -------------------------- | ------------------------ | --------------------- | --------------- |
 | GardenUI (boundary)      | Garden/Garden.vue        | GardenController      | @RestController |
 | NewGardenUI (boundary)   | Garden/NewGarden.vue     | GardenController      | @RestController |
-| GardenUI[id] (boundary)  | Garden/GardenDetail.vue  | GardenController      | @RestController |
+| GardenStructureUI (boundary) | Garden/GardenStructure.vue | GardenController  | @RestController |
 | GardenWorkFlow (control) | —                        | GardenService         | @Service        |
 | Garden (entity)          | —                        | Garden                | @Entity         |
 | GardenDAO (life cycle)   | —                        | GardenDAO             | @Repository     |
@@ -1191,7 +1210,7 @@ svc -> repo : save(garden)
 return Garden
 svc --> ctrl : GardenDTO
 ctrl --> vue : 201 Created\n{ GardenDTO }
-vue -> vue : redirect Vue Router /garden/{id}
+vue -> vue : redirect Vue Router /garden/{id}/structure
 
 @enduml
 ~~~
@@ -1242,7 +1261,7 @@ GardenDAO "1" ..> "0..*" Garden
 
 | Analyse (Arrington)      | Vue.js (Frontend)        | Spring Boot (Backend) | Annotation      |
 | -------------------------- | ------------------------ | --------------------- | --------------- |
-| GardenUI[id] (boundary)  | Garden/GardenDetail.vue  | GardenController      | @RestController |
+| GardenDetailUI (boundary) | Garden/GardenDetail.vue | GardenController   | @RestController |
 | GardenWorkFlow (control) | —                        | GardenService         | @Service        |
 | Garden (entity)          | —                        | Garden                | @Entity         |
 | GardenDAO (life cycle)   | —                        | GardenDAO             | @Repository     |
@@ -1332,11 +1351,13 @@ Garden "1" *-- "0..*" GardenPlant
 
 | Analyse (Arrington)      | Vue.js (Frontend)        | Spring Boot (Backend) | Annotation      |
 | -------------------------- | ------------------------ | --------------------- | --------------- |
-| GardenUI[id] (boundary)  | Garden/GardenDetail.vue  | GardenController      | @RestController |
+| GardenStructureUI (boundary) | Garden/GardenStructure.vue | GardenController  | @RestController |
+| GardenDetailUI (boundary)  | Garden/GardenDetail.vue  | GardenController  | @RestController |
 | GardenUI (boundary)      | Garden/GardenList.vue    | GardenController      | @RestController |
 | GardenWorkFlow (control) | —                        | GardenService         | @Service        |
 
 ##### Description des interactions entre objets
+
 
 ~~~plantuml
 @startuml
@@ -1404,12 +1425,14 @@ GardenDAO "1" ..> "0..*" Garden
 | Analyse (Arrington)      | Vue.js (Frontend)        | Spring Boot (Backend) | Annotation      |
 | -------------------------- | ------------------------ | --------------------- | --------------- |
 | GardenUI (boundary)      | Garden/GardenList.vue    | GardenController      | @RestController |
-| GardenUI[id] (boundary)  | Garden/GardenDetail.vue  | GardenController      | @RestController |
+| GardenDetailUI (boundary) | Garden/GardenDetail.vue | GardenController   | @RestController |
 | GardenWorkFlow (control) | —                        | GardenService         | @Service        |
 | Garden (entity)          | —                        | Garden                | @Entity         |
 | GardenDAO (life cycle)   | —                        | GardenDAO             | @Repository     |
 
 ##### Description des interactions entre objets
+
+Le clic depuis `GardenList.vue` mène par défaut à `GardenDetail.vue` (usage fréquent) ; `GardenStructure.vue` reste accessible depuis cette vue pour les modifications occasionnelles (voir §Renommer/Modifier un potager, §Zones).
 
 ~~~plantuml
 @startuml
@@ -1422,14 +1445,14 @@ boundary "GardenController <<@RestController>>" as ctrl
 control "GardenService <<@Service>>" as svc
 participant "GardenDAO <<@Repository>>" as repo
 
-u -> vue : (navigation Vue Router /garden/:id)
+u -> vue : (navigation Vue Router /garden/:id/plants)
 vue -> ctrl : GET /api/garden/{id}
 ctrl -> svc : getGardenById(id)
 svc -> repo : findById(id)
 repo --> svc : Optional<Garden>
 svc --> ctrl : GardenDTO
 ctrl --> vue : 200 OK\n{ GardenDTO }
-vue -> vue : affiche le détail du potager
+vue -> vue : affiche le suivi du potager
 
 @enduml
 ~~~
@@ -1476,8 +1499,8 @@ GardenDAO "1" ..> "0..*" Garden
 
 | Analyse (Arrington)      | Vue.js (Frontend)        | Spring Boot (Backend) | Annotation      |
 | -------------------------- | ------------------------ | --------------------- | --------------- |
-| GardenUI (boundary)      | Garden/GardenDetail.vue  | GardenController      | @RestController |
-| PlantUI (boundary)       | Garden/GardenDetail.vue  | PlantController       | @RestController |
+| GardenDetailUI (boundary) | Garden/GardenDetail.vue | GardenController   | @RestController |
+| PlantUI (boundary)       | Garden/GardenDetail.vue | PlantController       | @RestController |
 | GardenWorkFlow (control) | —                        | GardenService         | @Service        |
 | PlantWorkFlow (control)  | —                        | PlantService          | @Service        |
 | Garden (entity)          | —                        | Garden                | @Entity         |
@@ -1555,7 +1578,7 @@ PlantDAO "1" ..> "0..*" Plant
 
 | Analyse (Arrington)      | Vue.js (Frontend)        | Spring Boot (Backend) | Annotation      |
 | -------------------------- | ------------------------ | --------------------- | --------------- |
-| GardenUI[id] (boundary)  | Garden/GardenDetail.vue  | GardenController      | @RestController |
+| GardenDetailUI (boundary) | Garden/GardenDetail.vue | GardenController   | @RestController |
 | GardenWorkFlow (control) | —                        | GardenService         | @Service        |
 | Garden (entity)          | —                        | Garden                | @Entity         |
 | GardenDAO (life cycle)   | —                        | GardenDAO             | @Repository     |
@@ -1660,7 +1683,7 @@ Garden "1" *-- "0..*" GardenPlant
 
 | Analyse (Arrington)      | Vue.js (Frontend)        | Spring Boot (Backend) | Annotation      |
 | -------------------------- | ------------------------ | --------------------- | --------------- |
-| GardenUI[id] (boundary)  | Garden/GardenDetail.vue  | GardenController      | @RestController |
+| GardenDetailUI (boundary) | Garden/GardenDetail.vue | GardenController   | @RestController |
 | GardenWorkFlow (control) | —                        | GardenService         | @Service        |
 | Garden (entity)          | —                        | Garden                | @Entity         |
 | GardenDAO (life cycle)   | —                        | GardenDAO             | @Repository     |
@@ -1769,7 +1792,7 @@ GardenPlant ..> PlantState
 
 | Analyse (Arrington)      | Vue.js (Frontend)        | Spring Boot (Backend) | Annotation      |
 | -------------------------- | ------------------------ | --------------------- | --------------- |
-| GardenUI[id] (boundary)  | Garden/GardenDetail.vue  | GardenController      | @RestController |
+| GardenStructureUI (boundary) | Garden/GardenStructure.vue | GardenController  | @RestController |
 | GardenWorkFlow (control) | —                        | GardenService         | @Service        |
 | Garden (entity)          | —                        | Garden                | @Entity         |
 | GardenDAO (life cycle)   | —                        | GardenDAO             | @Repository     |
@@ -1782,7 +1805,7 @@ title Renommer / Modifier un potager - API REST + Vue.js
 skin rose
 
 actor User as u
-boundary "Garden/GardenDetail.vue\n(Vue.js)" as vue
+boundary "Garden/GardenStructure.vue\n(Vue.js)" as vue
 boundary "GardenController <<@RestController>>" as ctrl
 control "GardenService <<@Service>>" as svc
 entity "Garden <<@Entity>>" as enG
@@ -1923,7 +1946,7 @@ GardenDAO "1" ..> "0..*" Garden
 
 | Analyse (Arrington)      | Vue.js (Frontend)        | Spring Boot (Backend) | Annotation      |
 | -------------------------- | ------------------------ | --------------------- | --------------- |
-| GardenUI[id] (boundary)  | Garden/GardenDetail.vue  | GardenController      | @RestController |
+| GardenStructureUI (boundary) | Garden/GardenStructure.vue | GardenController  | @RestController |
 | GardenWorkFlow (control) | —                        | GardenService         | @Service        |
 | Area (entity)            | —                        | Area                  | @Entity         |
 | AreaDAO (life cycle)     | —                        | AreaDAO               | @Repository     |
@@ -1936,7 +1959,7 @@ title Ajout d'une zone au potager - API REST + Vue.js
 skin rose
 
 actor User as u
-boundary "Garden/GardenDetail.vue\n(Vue.js)" as vue
+boundary "Garden/GardenStructure.vue\n(Vue.js)" as vue
 boundary "GardenController <<@RestController>>" as ctrl
 control "GardenService <<@Service>>" as svc
 entity "Area <<@Entity>>" as en
@@ -2005,7 +2028,7 @@ AreaDAO "1" ..> "0..*" Area
 
 | Analyse (Arrington)      | Vue.js (Frontend)        | Spring Boot (Backend) | Annotation      |
 | -------------------------- | ------------------------ | --------------------- | --------------- |
-| GardenUI[id] (boundary)  | Garden/GardenDetail.vue  | GardenController      | @RestController |
+| GardenStructureUI (boundary) | Garden/GardenStructure.vue | GardenController  | @RestController |
 | GardenWorkFlow (control) | —                        | GardenService         | @Service        |
 | Area (entity)            | —                        | Area                  | @Entity         |
 | AreaDAO (life cycle)     | —                        | AreaDAO               | @Repository     |
@@ -2018,7 +2041,7 @@ title Modification d'une zone - API REST + Vue.js
 skin rose
 
 actor User as u
-boundary "Garden/GardenDetail.vue\n(Vue.js)" as vue
+boundary "Garden/GardenStructure.vue\n(Vue.js)" as vue
 boundary "GardenController <<@RestController>>" as ctrl
 control "GardenService <<@Service>>" as svc
 entity "Area <<@Entity>>" as en
@@ -2090,7 +2113,7 @@ AreaDAO "1" ..> "0..*" Area
 
 | Analyse (Arrington)      | Vue.js (Frontend)        | Spring Boot (Backend) | Annotation      |
 | -------------------------- | ------------------------ | --------------------- | --------------- |
-| GardenUI[id] (boundary)  | Garden/GardenDetail.vue  | GardenController      | @RestController |
+| GardenStructureUI (boundary) | Garden/GardenStructure.vue | GardenController  | @RestController |
 | GardenWorkFlow (control) | —                        | GardenService         | @Service        |
 | Area (entity)            | —                        | Area                  | @Entity         |
 | AreaDAO (life cycle)     | —                        | AreaDAO               | @Repository     |
@@ -2103,7 +2126,7 @@ title Suppression d'une zone - API REST + Vue.js
 skin rose
 
 actor User as u
-boundary "Garden/GardenDetail.vue\n(Vue.js)" as vue
+boundary "Garden/GardenStructure.vue\n(Vue.js)" as vue
 boundary "GardenController <<@RestController>>" as ctrl
 control "GardenService <<@Service>>" as svc
 participant "AreaDAO <<@Repository>>" as repo
@@ -2163,7 +2186,7 @@ AreaDAO "1" ..> "0..*" Area
 
 | Analyse (Arrington)      | Vue.js (Frontend)        | Spring Boot (Backend) | Annotation      |
 | -------------------------- | ------------------------ | --------------------- | --------------- |
-| GardenUI[id] (boundary)  | Garden/GardenDetail.vue  | GardenController      | @RestController |
+| GardenDetailUI (boundary) | Garden/GardenDetail.vue | GardenController   | @RestController |
 | GardenWorkFlow (control) | —                        | GardenService         | @Service        |
 | Garden (entity)          | —                        | Garden                | @Entity         |
 | GardenDAO (life cycle)   | —                        | GardenDAO             | @Repository     |
@@ -2526,6 +2549,8 @@ class User <<@Entity>> {
   - email : String
   - unit : String
   - language : String
+  - provider : String
+  - providerId : String
 }
 
 class Plant <<@Entity>> {
@@ -2722,8 +2747,8 @@ skin rose
 
 class AuthService <<@Service>> {
   + checkEmail(email : String) : Optional<User>
-  + createUser(email : String) : UserDTO
-  + validateEmail(email : String) : UserDTO
+  + createUser(email : String, provider : String, providerId : String) : UserDTO
+  + updateProvider(email : String, provider : String, providerId : String) : UserDTO
 }
 
 class ProfileService <<@Service>> {
@@ -2804,8 +2829,7 @@ title RestControllers Spring MVC + Composants Vue.js
 skin rose
 
 class AuthController <<@RestController>> {
-  POST + signUp(@RequestBody email : String) : ResponseEntity<UserDTO>
-  POST + login(@RequestBody email : String) : ResponseEntity<UserDTO>
+  GET + me(principal : OidcUser) : ResponseEntity<UserDTO>
 }
 
 class ProfileController <<@RestController>> {
@@ -2852,7 +2876,6 @@ class NotifController <<@RestController>> {
 }
 
 note right of AuthController
-  Auth/SignUp.vue
   Auth/Login.vue
 end note
 
@@ -2877,6 +2900,7 @@ end note
 note right of GardenController
   Garden/GardenList.vue
   Garden/NewGarden.vue
+  Garden/GardenStructure.vue
   Garden/GardenDetail.vue
 end note
 
@@ -2912,6 +2936,8 @@ ArticleController "1" --> "1" ArticleService
 CREATE TABLE User_(
    email VARCHAR(50) ,
    unit VARCHAR(2) ,
+   provider VARCHAR(20) ,
+   provider_id VARCHAR(255) ,
    language_ VARCHAR(2) ,
    PRIMARY KEY(email)
 );
@@ -2959,8 +2985,7 @@ CREATE TABLE Species(
    name_icon VARCHAR(50) ,
    plantation_start TINYINT,
    plantation_end TINYINT,
-   harvest_start TINYINT,
-   harvest_end TINYINT,
+   harvest_duration TINYINT,
    name_family VARCHAR(50)  NOT NULL,
    PRIMARY KEY(name_species),
    FOREIGN KEY(name_family) REFERENCES Family(name_family)
@@ -2972,8 +2997,7 @@ CREATE TABLE Variety(
    name_icon VARCHAR(50) ,
    plantation_start TINYINT,
    plantation_end TINYINT,
-   harvest_start TINYINT,
-   harvest_end TINYINT,
+   harvest_duration TINYINT,
    name_species VARCHAR(50)  NOT NULL,
    PRIMARY KEY(name_variety),
    FOREIGN KEY(name_species) REFERENCES Species(name_species)

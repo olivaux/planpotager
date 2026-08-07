@@ -379,4 +379,53 @@ class GardenServiceTest {
         assertThatThrownBy(() -> gardenService.deleteArea(OTHER_USER_EMAIL, 1L, 5L))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void getGardenPlants_shouldReturnDTOsForEveryPlantInGarden() {
+        User user = new User(USER_EMAIL);
+        Garden garden = new Garden("Potager du fond", 2.35, 48.85, user);
+        Plant plant = new Plant("Tomate Cerise", "Graines du Midi", USER_EMAIL);
+        garden.addPlant(plant, 10, 20);
+        when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
+
+        List<GardenPlantDTO> result = gardenService.getGardenPlants(USER_EMAIL, 1L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).x()).isEqualTo(10);
+        assertThat(result.get(0).y()).isEqualTo(20);
+    }
+
+    @Test
+    void getGardenPlants_shouldThrow_whenUserDoesNotOwnGarden() {
+        User owner = new User(USER_EMAIL);
+        Garden garden = new Garden("Potager du fond", 2.35, 48.85, owner);
+        when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
+
+        assertThatThrownBy(() -> gardenService.getGardenPlants(OTHER_USER_EMAIL, 1L))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void getGardenAreas_shouldReturnDTOsForEveryAreaInGarden() {
+        User user = new User(USER_EMAIL);
+        Garden garden = new Garden("Potager du fond", 2.35, 48.85, user);
+        Area area = new Area(garden, 0.0, 0.0, 10.0, 0.0, 10.0, 10.0, 0.0, 10.0);
+        when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
+        when(areaDAO.findByGardenId(1L)).thenReturn(List.of(area));
+
+        List<AreaDTO> result = gardenService.getGardenAreas(USER_EMAIL, 1L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).leftUpX()).isEqualTo(0.0);
+    }
+
+    @Test
+    void getGardenAreas_shouldThrow_whenUserDoesNotOwnGarden() {
+        User owner = new User(USER_EMAIL);
+        Garden garden = new Garden("Potager du fond", 2.35, 48.85, owner);
+        when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
+
+        assertThatThrownBy(() -> gardenService.getGardenAreas(OTHER_USER_EMAIL, 1L))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

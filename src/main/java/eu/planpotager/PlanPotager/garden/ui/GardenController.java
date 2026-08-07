@@ -121,6 +121,28 @@ public class GardenController {
         }
     }
 
+    @GetMapping("/{gardenId}/plants")
+    public ResponseEntity<List<GardenPlantDTO>> getGardenPlants(@PathVariable Long gardenId,
+            @AuthenticationPrincipal OidcUser principal) {
+        try {
+            List<GardenPlantDTO> plants = gardenService.getGardenPlants(principal.getEmail(), gardenId);
+            return ResponseEntity.ok(plants);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/{gardenId}/areas")
+    public ResponseEntity<List<AreaDTO>> getGardenAreas(@PathVariable Long gardenId,
+            @AuthenticationPrincipal OidcUser principal) {
+        try {
+            List<AreaDTO> areas = gardenService.getGardenAreas(principal.getEmail(), gardenId);
+            return ResponseEntity.ok(areas);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/{gardenId}/plant/{plantId}/states")
     public ResponseEntity<List<PlantState>> getAvailableStates(@PathVariable Long gardenId,
             @PathVariable Long plantId) {

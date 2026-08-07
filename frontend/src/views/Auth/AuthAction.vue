@@ -16,7 +16,7 @@ const ctaLabel = computed(() =>
 <template>
   <div class="auth-action">
     <h1>{{ title }}</h1>
-        <a class="cta" href="/oauth2/authorization/google">{{ ctaLabel }}</a>
+        <a class="btn btn-primary cta" href="/oauth2/authorization/google">{{ ctaLabel }}</a>
   </div>
 </template>
 
@@ -30,14 +30,6 @@ const ctaLabel = computed(() =>
 }
 
 .cta {
-  display: inline-flex;
-  align-items: center;
-  padding: 10px 20px;
-  border-radius: 6px;
-  border: 2px solid var(--accent-border);
-  background: var(--accent-bg);
-  color: var(--text-h);
-  text-decoration: none;
   transition: box-shadow 0.3s;
 }
 

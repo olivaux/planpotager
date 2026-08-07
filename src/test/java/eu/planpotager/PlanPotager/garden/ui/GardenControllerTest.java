@@ -339,4 +339,38 @@ class GardenControllerTest {
         mockMvc.perform(delete("/api/garden/{gardenId}/area/{areaId}", 1L, 5L).with(csrf()))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void getGardenPlants_shouldReturnPlants_whenAuthenticated() throws Exception {
+        GardenPlantDTO plant = new GardenPlantDTO(7L, 10, 20, PlantState.PLANTEE, 42L);
+        when(gardenService.getGardenPlants(EMAIL, 1L)).thenReturn(List.of(plant));
+
+        mockMvc.perform(get("/api/garden/{gardenId}/plants", 1L)
+                .with(oidcLogin().userInfoToken(token -> token.claim("email", EMAIL))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].x").value(10));
+    }
+
+    @Test
+    void getGardenPlants_shouldBeRejected_whenNotAuthenticated() throws Exception {
+        mockMvc.perform(get("/api/garden/{gardenId}/plants", 1L))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getGardenAreas_shouldReturnAreas_whenAuthenticated() throws Exception {
+        AreaDTO area = new AreaDTO(5L, 0.0, 10.0, 10.0, 10.0, 10.0, 0.0, 0.0, 0.0);
+        when(gardenService.getGardenAreas(EMAIL, 1L)).thenReturn(List.of(area));
+
+        mockMvc.perform(get("/api/garden/{gardenId}/areas", 1L)
+                .with(oidcLogin().userInfoToken(token -> token.claim("email", EMAIL))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(5));
+    }
+
+    @Test
+    void getGardenAreas_shouldBeRejected_whenNotAuthenticated() throws Exception {
+        mockMvc.perform(get("/api/garden/{gardenId}/areas", 1L))
+                .andExpect(status().isUnauthorized());
+    }
 }

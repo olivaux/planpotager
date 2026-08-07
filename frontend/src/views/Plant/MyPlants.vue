@@ -29,65 +29,37 @@ async function confirmRemove(plantId) {
 </script>
 
 <template>
-  <div class="my-plants">
+  <div class="page page-medium">
     <h1>Mes plantes</h1>
 
     <p v-if="error" class="error">{{ error }}</p>
 
     <p v-else-if="plants.length === 0">Aucune plante enregistrée pour l'instant.</p>
 
-    <ul v-else>
-      <li v-for="plant in plants" :key="plant.id">
+    <ul v-else class="list-reset">
+      <li v-for="plant in plants" :key="plant.id" class="list-card row">
         <span>
           <strong>{{ plant.variety }}</strong>
           <span v-if="plant.supplier" class="supplier"> · {{ plant.supplier }}</span>
         </span>
-        <button type="button" @click="confirmRemove(plant.id)">Supprimer</button>
+        <button type="button" class="btn" @click="confirmRemove(plant.id)">Supprimer</button>
       </li>
     </ul>
   </div>
 </template>
 
 <style scoped>
-.my-plants {
-  padding: 32px 20px;
-  max-width: 480px;
-  margin: 0 auto;
-  text-align: left;
-}
-
 ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
   gap: 8px;
 }
 
-li {
+.row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
 }
 
 .supplier {
   color: var(--text);
-}
-
-button {
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: none;
-  color: var(--text-h);
-  cursor: pointer;
-}
-
-.error {
-  color: #d0342c;
 }
 </style>

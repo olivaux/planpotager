@@ -15,7 +15,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="profile">
+  <div class="page page-medium">
     <h1>Mon profil</h1>
 
     <p v-if="error" class="error">{{ error }}</p>
@@ -39,13 +39,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.profile {
-  padding: 32px 20px;
-  max-width: 480px;
-  margin: 0 auto;
-  text-align: left;
-}
-
 dl {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -60,9 +53,5 @@ dt {
 dd {
   margin: 0;
   color: var(--text-h);
-}
-
-.error {
-  color: #d0342c;
 }
 </style>

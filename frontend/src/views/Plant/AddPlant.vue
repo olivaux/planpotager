@@ -71,7 +71,7 @@ async function submit() {
 </script>
 
 <template>
-  <div class="add-plant">
+  <div class="page page-narrow">
     <h1>Ajouter une plante</h1>
 
     <p v-if="submitted" class="success">Plante ajoutée à votre compte.</p>
@@ -79,7 +79,7 @@ async function submit() {
     <p v-if="speciesError" class="error">{{ speciesError }}</p>
 
     <form @submit.prevent="submit">
-      <label>
+      <label class="field">
         Espèce
         <select v-model="selectedSpecies" @change="onSpeciesChange">
           <option value="" disabled>— Choisir une espèce —</option>
@@ -87,7 +87,7 @@ async function submit() {
         </select>
       </label>
 
-      <label>
+      <label class="field">
         Variété
         <select v-model="selectedVariety" :disabled="!selectedSpecies || loadingVarieties">
           <option value="" disabled>
@@ -98,67 +98,24 @@ async function submit() {
       </label>
       <p v-if="varietiesError" class="error">{{ varietiesError }}</p>
 
-      <label>
+      <label class="field">
         Fournisseur
         <input v-model="supplier" type="text" />
       </label>
 
-      <button type="submit" :disabled="!canSubmit">Ajouter</button>
+      <button type="submit" class="btn btn-primary" :disabled="!canSubmit">Ajouter</button>
     </form>
   </div>
 </template>
 
 <style scoped>
-.add-plant {
-  padding: 32px 20px;
-  max-width: 420px;
-  margin: 0 auto;
-  text-align: left;
-}
-
 form {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  color: var(--text);
-}
-
-select,
-input {
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text-h);
-  font: inherit;
-}
-
 button {
   align-self: flex-start;
-  padding: 10px 20px;
-  border-radius: 6px;
-  border: 2px solid var(--accent-border);
-  background: var(--accent-bg);
-  color: var(--text-h);
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.error {
-  color: #d0342c;
-}
-
-.success {
-  color: #2c8a3d;
 }
 </style>

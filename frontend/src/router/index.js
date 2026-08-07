@@ -5,8 +5,12 @@ import Profile from '../views/Profile/Profile.vue'
 import CatalogView from '../views/Registry/CatalogView.vue'
 import AddPlant from '../views/Plant/AddPlant.vue'
 import MyPlants from '../views/Plant/MyPlants.vue'
+import GardenList from '../views/Garden/GardenList.vue'
+import NewGarden from '../views/Garden/NewGarden.vue'
+import GardenStructure from '../views/Garden/GardenStructure.vue'
+import GardenDetail from '../views/Garden/GardenDetail.vue'
 
-// Les routes des vues 
+// Les routes des vues
 const routes = [
   { path: '/signup', name: 'signup', component: AuthAction, meta: { mode: 'signup' } },
   { path: '/login', name: 'login', component: AuthAction, meta: { mode: 'login' } },
@@ -14,6 +18,10 @@ const routes = [
   { path: '/catalog', name: 'catalog', component: CatalogView, meta: { requiresAuth: true } },
   { path: '/plant/add', name: 'plant-add', component: AddPlant, meta: { requiresAuth: true } },
   { path: '/plant/list', name: 'plant-list', component: MyPlants, meta: { requiresAuth: true } },
+  { path: '/garden', name: 'garden-list', component: GardenList, meta: { requiresAuth: true } },
+  { path: '/garden/new', name: 'garden-new', component: NewGarden, meta: { requiresAuth: true } },
+  { path: '/garden/:id/structure', name: 'garden-structure', component: GardenStructure, meta: { requiresAuth: true } },
+  { path: '/garden/:id/plants', name: 'garden-detail', component: GardenDetail, meta: { requiresAuth: true } },
 ]
 
 const router = createRouter({
