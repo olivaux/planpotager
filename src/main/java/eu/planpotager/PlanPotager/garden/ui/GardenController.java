@@ -83,37 +83,37 @@ public class GardenController {
     }
 
     @PostMapping("/{gardenId}/plant")
-    public ResponseEntity<GardenDTO> addPlantToGarden(@PathVariable Long gardenId,
+    public ResponseEntity<GardenPlantDTO> addPlantToGarden(@PathVariable Long gardenId,
             @RequestBody AddPlantToGardenRequest request,
             @AuthenticationPrincipal OidcUser principal) {
         try {
-            GardenDTO garden = gardenService.addPlantToGarden(principal.getEmail(), gardenId,
+            GardenPlantDTO gardenPlant = gardenService.addPlantToGarden(principal.getEmail(), gardenId,
                     request.plantId(), request.x(), request.y());
-            return ResponseEntity.status(HttpStatus.CREATED).body(garden);
+            return ResponseEntity.status(HttpStatus.CREATED).body(gardenPlant);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    @GetMapping("/{gardenId}/plant/{plantId}")
+    @GetMapping("/{gardenId}/plant/{gardenPlantId}")
     public ResponseEntity<GardenPlantDTO> getPlantCurrentPosition(@PathVariable Long gardenId,
-            @PathVariable Long plantId,
+            @PathVariable Long gardenPlantId,
             @AuthenticationPrincipal OidcUser principal) {
         try {
-            GardenPlantDTO gardenPlant = gardenService.getPlantCurrentPosition(principal.getEmail(), gardenId, plantId);
+            GardenPlantDTO gardenPlant = gardenService.getPlantCurrentPosition(principal.getEmail(), gardenId, gardenPlantId);
             return ResponseEntity.ok(gardenPlant);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    @PutMapping("/{gardenId}/plant/{plantId}/position")
+    @PutMapping("/{gardenId}/plant/{gardenPlantId}/position")
     public ResponseEntity<GardenDTO> changePlantPosition(@PathVariable Long gardenId,
-            @PathVariable Long plantId,
+            @PathVariable Long gardenPlantId,
             @RequestBody Map<String, Integer> position,
             @AuthenticationPrincipal OidcUser principal) {
         try {
-            GardenDTO garden = gardenService.changePlantPosition(principal.getEmail(), gardenId, plantId,
+            GardenDTO garden = gardenService.changePlantPosition(principal.getEmail(), gardenId, gardenPlantId,
                     position.get("x"), position.get("y"));
             return ResponseEntity.ok(garden);
         } catch (IllegalArgumentException e) {
@@ -149,25 +149,25 @@ public class GardenController {
         return ResponseEntity.ok(gardenService.getAvailableStates());
     }
 
-    @PutMapping("/{gardenId}/plant/{plantId}/state")
+    @PutMapping("/{gardenId}/plant/{gardenPlantId}/state")
     public ResponseEntity<GardenDTO> setPlantState(@PathVariable Long gardenId,
-            @PathVariable Long plantId,
+            @PathVariable Long gardenPlantId,
             @RequestBody SetStateRequest request,
             @AuthenticationPrincipal OidcUser principal) {
         try {
-            GardenDTO garden = gardenService.setPlantState(principal.getEmail(), gardenId, plantId, request.state());
+            GardenDTO garden = gardenService.setPlantState(principal.getEmail(), gardenId, gardenPlantId, request.state());
             return ResponseEntity.ok(garden);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    @DeleteMapping("/{gardenId}/plant/{plantId}")
+    @DeleteMapping("/{gardenId}/plant/{gardenPlantId}")
     public ResponseEntity<GardenDTO> removePlantFromGarden(@PathVariable Long gardenId,
-            @PathVariable Long plantId,
+            @PathVariable Long gardenPlantId,
             @AuthenticationPrincipal OidcUser principal) {
         try {
-            GardenDTO garden = gardenService.removePlantFromGarden(principal.getEmail(), gardenId, plantId);
+            GardenDTO garden = gardenService.removePlantFromGarden(principal.getEmail(), gardenId, gardenPlantId);
             return ResponseEntity.ok(garden);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();

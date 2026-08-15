@@ -45,7 +45,7 @@ class PlantControllerTest {
 
     @Test
     void addPlant_shouldReturnCreatedPlant_whenAuthenticated() throws Exception {
-        PlantDTO created = new PlantDTO(1L, "Tomate Cerise", "Graines du Midi");
+        PlantDTO created = new PlantDTO(1L, "Tomate Cerise", "Graines du Midi", "Tomate", 0.2);
         when(plantService.addPlant("Tomate Cerise", "Graines du Midi", EMAIL)).thenReturn(created);
 
         mockMvc.perform(post("/api/plant")
@@ -95,7 +95,7 @@ class PlantControllerTest {
 
     @Test
     void getAvailablePlants_shouldReturnPlantsOfUser_whenAuthenticated() throws Exception {
-        PlantDTO tomato = new PlantDTO(1L, "Tomate Cerise", "Graines du Midi");
+        PlantDTO tomato = new PlantDTO(1L, "Tomate Cerise", "Graines du Midi", "Tomate", 0.2);
         when(plantService.getAvailablePlants(EMAIL)).thenReturn(List.of(tomato));
 
         mockMvc.perform(get("/api/plant")

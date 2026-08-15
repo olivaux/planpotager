@@ -155,9 +155,9 @@ class GardenControllerTest {
     }
 
     @Test
-    void addPlantToGarden_shouldReturnCreatedGarden_whenAuthenticated() throws Exception {
-        GardenDTO garden = new GardenDTO(1L, "Potager du fond", 2.35, 48.85);
-        when(gardenService.addPlantToGarden(EMAIL, 1L, 42L, 10, 20)).thenReturn(garden);
+    void addPlantToGarden_shouldReturnCreatedGardenPlant_whenAuthenticated() throws Exception {
+        GardenPlantDTO created = new GardenPlantDTO(7L, 10, 20, PlantState.A_PLANTER, 42L);
+        when(gardenService.addPlantToGarden(EMAIL, 1L, 42L, 10, 20)).thenReturn(created);
 
         mockMvc.perform(post("/api/garden/{gardenId}/plant", 1L)
                 .with(oidcLogin().userInfoToken(token -> token.claim("email", EMAIL)))
@@ -165,7 +165,8 @@ class GardenControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new AddPlantToGardenRequest(42L, 10, 20))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(1));
+                .andExpect(jsonPath("$.id").value(7))
+                .andExpect(jsonPath("$.plantId").value(42));
     }
 
     @Test

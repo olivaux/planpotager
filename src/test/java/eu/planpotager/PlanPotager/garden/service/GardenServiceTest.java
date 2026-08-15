@@ -18,6 +18,10 @@ import eu.planpotager.PlanPotager.garden.dto.GardenDTO;
 import eu.planpotager.PlanPotager.garden.dto.GardenPlantDTO;
 import eu.planpotager.PlanPotager.plant.dao.PlantDAO;
 import eu.planpotager.PlanPotager.plant.domain.Plant;
+import eu.planpotager.PlanPotager.registry.domain.Family;
+import eu.planpotager.PlanPotager.registry.domain.Species;
+import eu.planpotager.PlanPotager.registry.domain.Type;
+import eu.planpotager.PlanPotager.registry.domain.Variety;
 import eu.planpotager.PlanPotager.user.dao.UserDAO;
 import eu.planpotager.PlanPotager.user.domain.User;
 import java.util.List;
@@ -48,6 +52,12 @@ class GardenServiceTest {
 
     @InjectMocks
     private GardenService gardenService;
+
+    private Variety cherryTomatoVariety() {
+        Family family = new Family("Solanacees", new Type("Legume"));
+        Species species = new Species("Tomate", 0.3, 3, 5, 2, family);
+        return new Variety("Tomate Cerise", 0.2, 3, 5, 2, species);
+    }
 
     @Test
     void createGarden_shouldPersistGarden_andReturnMatchingDTO() {
@@ -155,21 +165,26 @@ class GardenServiceTest {
     void addPlantToGarden_shouldDelegateToGardenEntity_andPersist() {
         User user = new User(USER_EMAIL);
         Garden garden = mock(Garden.class);
-        Plant plantRef = new Plant("Tomate Cerise", "Graines du Midi", USER_EMAIL);
+        Plant plantRef = new Plant(cherryTomatoVariety(), "Graines du Midi", USER_EMAIL);
+        GardenPlant createdGardenPlant = mock(GardenPlant.class);
         when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
         when(garden.getUser()).thenReturn(user);
         when(plantDAO.findById(42L)).thenReturn(Optional.of(plantRef));
+        when(garden.addPlant(plantRef, 10, 20)).thenReturn(createdGardenPlant);
         when(gardenDAO.save(garden)).thenReturn(garden);
-        when(garden.getId()).thenReturn(1L);
-        when(garden.getName()).thenReturn("Potager du fond");
-        when(garden.getLongitude()).thenReturn(2.35);
-        when(garden.getLatitude()).thenReturn(48.85);
+        when(createdGardenPlant.getId()).thenReturn(7L);
+        when(createdGardenPlant.getX()).thenReturn(10);
+        when(createdGardenPlant.getY()).thenReturn(20);
+        when(createdGardenPlant.getState()).thenReturn(PlantState.A_PLANTER);
+        when(createdGardenPlant.getPlant()).thenReturn(plantRef);
 
-        GardenDTO result = gardenService.addPlantToGarden(USER_EMAIL, 1L, 42L, 10, 20);
+        GardenPlantDTO result = gardenService.addPlantToGarden(USER_EMAIL, 1L, 42L, 10, 20);
 
         verify(garden).addPlant(plantRef, 10, 20);
         verify(gardenDAO).save(garden);
-        assertThat(result.id()).isEqualTo(1L);
+        assertThat(result.id()).isEqualTo(7L);
+        assertThat(result.x()).isEqualTo(10);
+        assertThat(result.y()).isEqualTo(20);
     }
 
     @Test
@@ -188,10 +203,10 @@ class GardenServiceTest {
         User user = new User(USER_EMAIL);
         Garden garden = mock(Garden.class);
         GardenPlant gardenPlant = mock(GardenPlant.class);
-        Plant plant = new Plant("Tomate Cerise", "Graines du Midi", USER_EMAIL);
+        Plant plant = new Plant(cherryTomatoVariety(), "Graines du Midi", USER_EMAIL);
         when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
         when(garden.getUser()).thenReturn(user);
-        when(garden.findPlant(42L)).thenReturn(gardenPlant);
+        when(garden.findGardenPlant(42L)).thenReturn(gardenPlant);
         when(gardenPlant.getX()).thenReturn(10);
         when(gardenPlant.getY()).thenReturn(20);
         when(gardenPlant.getState()).thenReturn(PlantState.PLANTEE);
@@ -384,7 +399,7 @@ class GardenServiceTest {
     void getGardenPlants_shouldReturnDTOsForEveryPlantInGarden() {
         User user = new User(USER_EMAIL);
         Garden garden = new Garden("Potager du fond", 2.35, 48.85, user);
-        Plant plant = new Plant("Tomate Cerise", "Graines du Midi", USER_EMAIL);
+        Plant plant = new Plant(cherryTomatoVariety(), "Graines du Midi", USER_EMAIL);
         garden.addPlant(plant, 10, 20);
         when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
 

@@ -84,29 +84,31 @@ public class Garden {
         return gardenPlants;
     }
 
-    public void addPlant(Plant plant, int x, int y) {
-        gardenPlants.add(new GardenPlant(this, plant, x, y));
+    public GardenPlant addPlant(Plant plant, int x, int y) {
+        GardenPlant gardenPlant = new GardenPlant(this, plant, x, y);
+        gardenPlants.add(gardenPlant);
+        return gardenPlant;
     }
 
-    public GardenPlant findPlant(Long plantId) {
+    public GardenPlant findGardenPlant(Long gardenPlantId) {
         return gardenPlants.stream()
-                .filter(gardenPlant -> gardenPlant.getPlant().getId().equals(plantId))
+                .filter(gardenPlant -> gardenPlant.getId().equals(gardenPlantId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Plant not found in the garden"));
     }
 
-    public void updatePlantPosition(Long plantId, int newX, int newY) {
-        GardenPlant gardenPlant = findPlant(plantId);
+    public void updatePlantPosition(Long gardenPlantId, int newX, int newY) {
+        GardenPlant gardenPlant = findGardenPlant(gardenPlantId);
         gardenPlant.setPosition(newX, newY);
     }
 
-    public void setPlantState(Long plantId, PlantState state) {
-        GardenPlant gardenPlant = findPlant(plantId);
+    public void setPlantState(Long gardenPlantId, PlantState state) {
+        GardenPlant gardenPlant = findGardenPlant(gardenPlantId);
         gardenPlant.setState(state);
     }
 
-    public void removePlant(Long plantId) {
-        GardenPlant gardenPlant = findPlant(plantId);
+    public void removePlant(Long gardenPlantId) {
+        GardenPlant gardenPlant = findGardenPlant(gardenPlantId);
         gardenPlants.remove(gardenPlant);
     }
 

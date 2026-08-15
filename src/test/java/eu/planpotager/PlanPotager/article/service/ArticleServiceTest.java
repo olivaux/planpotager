@@ -8,6 +8,7 @@ import eu.planpotager.PlanPotager.article.domain.Article;
 import eu.planpotager.PlanPotager.article.dto.ArticleDTO;
 import eu.planpotager.PlanPotager.registry.domain.Family;
 import eu.planpotager.PlanPotager.registry.domain.Species;
+import eu.planpotager.PlanPotager.registry.domain.Type;
 import eu.planpotager.PlanPotager.registry.domain.Variety;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -27,9 +28,9 @@ class ArticleServiceTest {
 
     @Test
     void getArticlesByVariety_shouldReturnDTOsForEveryArticleLinkedToVariety() {
-        Family family = new Family("Solanaceae");
-        Species tomato = new Species("Tomate", 0.3, 3, 5, 7, 9, family);
-        Variety cherry = new Variety("Cerise", 0.2, 3, 5, 7, 9, tomato);
+        Family family = new Family("Solanaceae", new Type("Légume"));
+        Species tomato = new Species("Tomate", 0.3, 3, 5, 2, family);
+        Variety cherry = new Variety("Cerise", 0.2, 3, 5, 2, tomato);
         Article a1 = new Article("Bien planter la tomate cerise", "...", "https://example.com/1", cherry);
         Article a2 = new Article("Astuces d'arrosage", "...", "https://example.com/2", cherry);
         when(articleDAO.findByVarietyName("Cerise")).thenReturn(List.of(a1, a2));

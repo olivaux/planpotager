@@ -13,7 +13,10 @@ import {
 } from '../../services/gardenService.js'
 import { getAvailablePlants } from '../../services/plantService.js'
 import { useKonvaZoomPan } from '../../composables/useKonvaZoomPan.js'
+import { usePlantImage } from '../../composables/usePlantImage.js'
 import { EDGES, areaToPoints, edgeMidpoint, edgeLength } from '../../utils/areaGeometry.js'
+
+const DEFAULT_PLANT_RADIUS = 10
 
 const route = useRoute()
 const gardenId = Number(route.params.id)
@@ -30,15 +33,23 @@ const { stageConfig, stagePos, scale, onWheel } = useKonvaZoomPan({ width: 900, 
 
 const plantsById = computed(() => new Map(ownedPlants.value.map((p) => [p.id, p])))
 
-const unplacedPlants = computed(() => {
-  const placedIds = new Set(plants.value.map((p) => p.plantId))
-  return ownedPlants.value.filter((p) => !placedIds.has(p.id))
-})
-
-const selectedPlantId = ref(null)
+const selectedGardenPlantId = ref(null)
 const selectedPlant = computed(
-  () => plants.value.find((p) => p.plantId === selectedPlantId.value) ?? null,
+  () => plants.value.find((p) => p.id === selectedGardenPlantId.value) ?? null,
 )
+
+function plantRadius(plantId) {
+  return plantsById.value.get(plantId)?.radius ?? DEFAULT_PLANT_RADIUS
+}
+
+function plantImage(plantId) {
+  const species = plantsById.value.get(plantId)?.species
+  return usePlantImage(species).value
+}
+
+function circleClip(ctx, radius) {
+  ctx.arc(0, 0, radius, 0, Math.PI * 2, false)
+}
 
 async function loadAll() {
   loading.value = true
@@ -82,8 +93,8 @@ async function onCanvasDrop(event) {
   const y = Math.round((event.clientY - rect.top - stagePos.value.y) / scale.value)
 
   try {
-    await addPlantToGarden(gardenId, { plantId, x, y })
-    plants.value = [...plants.value, { id: null, x, y, state: 'A_PLANTER', plantId }]
+    const created = await addPlantToGarden(gardenId, { plantId, x, y })
+    plants.value = [...plants.value, created]
   } catch {
     error.value = 'Impossible de placer cette plante.'
   }
@@ -97,7 +108,7 @@ async function onPlantDragEnd(plant, konvaEvent) {
   plant.x = x
   plant.y = y
   try {
-    await updatePlantPosition(gardenId, plant.plantId, { x, y })
+    await updatePlantPosition(gardenId, plant.id, { x, y })
   } catch {
     error.value = 'Impossible de déplacer cette plante.'
   }
@@ -106,7 +117,7 @@ async function onPlantDragEnd(plant, konvaEvent) {
 // --- Sélection / état / retrait d'une plante ---
 
 function selectPlant(plant) {
-  selectedPlantId.value = plant.plantId
+  selectedGardenPlantId.value = plant.id
 }
 
 async function changeState(newState) {
@@ -114,7 +125,7 @@ async function changeState(newState) {
     return
   }
   try {
-    await setPlantState(gardenId, selectedPlant.value.plantId, newState)
+    await setPlantState(gardenId, selectedPlant.value.id, newState)
     selectedPlant.value.state = newState
   } catch {
     error.value = "Impossible de changer l'état de cette plante."
@@ -129,9 +140,9 @@ async function removeSelectedPlant() {
     return
   }
   try {
-    await removePlantFromGarden(gardenId, selectedPlant.value.plantId)
-    plants.value = plants.value.filter((p) => p.plantId !== selectedPlant.value.plantId)
-    selectedPlantId.value = null
+    await removePlantFromGarden(gardenId, selectedPlant.value.id)
+    plants.value = plants.value.filter((p) => p.id !== selectedPlant.value.id)
+    selectedGardenPlantId.value = null
   } catch {
     error.value = 'Impossible de retirer cette plante.'
   }
@@ -160,12 +171,12 @@ async function removeSelectedPlant() {
         <aside class="garden-sidebar">
           <section>
             <h2>Mes plantes disponibles</h2>
-            <p v-if="unplacedPlants.length === 0" class="hint">
-              Toutes vos plantes sont déjà placées.
+            <p v-if="ownedPlants.length === 0" class="hint">
+              Vous n'avez pas encore de plante. Ajoutez-en depuis votre compte.
             </p>
             <ul v-else class="list-reset palette">
               <li
-                v-for="plant in unplacedPlants"
+                v-for="plant in ownedPlants"
                 :key="plant.id"
                 class="list-card"
                 draggable="true"
@@ -220,18 +231,28 @@ async function removeSelectedPlant() {
 
               <v-group
                 v-for="plant in plants"
-                :key="plant.plantId"
+                :key="plant.id"
                 :config="{ x: plant.x, y: plant.y, draggable: true }"
                 @dragend="onPlantDragEnd(plant, $event)"
                 @click="selectPlant(plant)"
                 @tap="selectPlant(plant)"
               >
+                <v-group :config="{ clipFunc: (ctx) => circleClip(ctx, plantRadius(plant.plantId)) }">
+                  <v-image
+                    :config="{
+                      image: plantImage(plant.plantId),
+                      width: 2 * plantRadius(plant.plantId),
+                      height: 2 * plantRadius(plant.plantId),
+                      offsetX: plantRadius(plant.plantId),
+                      offsetY: plantRadius(plant.plantId),
+                    }"
+                  />
+                </v-group>
                 <v-circle
                   :config="{
-                    radius: 10,
-                    fill: plant.plantId === selectedPlantId ? '#2c8a3d' : '#aa3bff',
-                    stroke: '#08060d',
-                    strokeWidth: 1,
+                    radius: plantRadius(plant.plantId),
+                    stroke: plant.id === selectedGardenPlantId ? '#2c8a3d' : '#aa3bff',
+                    strokeWidth: 2,
                   }"
                 />
               </v-group>

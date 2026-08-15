@@ -7,6 +7,7 @@ import eu.planpotager.PlanPotager.registry.dao.SpeciesDAO;
 import eu.planpotager.PlanPotager.registry.dao.VarietyDAO;
 import eu.planpotager.PlanPotager.registry.domain.Family;
 import eu.planpotager.PlanPotager.registry.domain.Species;
+import eu.planpotager.PlanPotager.registry.domain.Type;
 import eu.planpotager.PlanPotager.registry.domain.Variety;
 import eu.planpotager.PlanPotager.registry.dto.SpeciesDTO;
 import eu.planpotager.PlanPotager.registry.dto.VarietyDTO;
@@ -31,9 +32,9 @@ class RegistryServiceTest {
 
     @Test
     void getAllSpecies_shouldReturnDTOsForEverySpeciesInRegistry() {
-        Family family = new Family("Solanaceae");
-        Species tomato = new Species("Tomate", 0.3, 3, 5, 7, 9, family);
-        Species pepper = new Species("Poivron", 0.25, 3, 5, 7, 10, family);
+        Family family = new Family("Solanaceae", new Type("Légume"));
+        Species tomato = new Species("Tomate", 0.3, 3, 5, 2, family);
+        Species pepper = new Species("Poivron", 0.25, 3, 5, 3, family);
         when(speciesDAO.findAll()).thenReturn(List.of(tomato, pepper));
 
         List<SpeciesDTO> result = registryService.getAllSpecies();
@@ -52,10 +53,10 @@ class RegistryServiceTest {
 
     @Test
     void getVarietiesBySpecies_shouldReturnOnlyVarietiesOfRequestedSpecies() {
-        Family family = new Family("Solanaceae");
-        Species tomato = new Species("Tomate", 0.3, 3, 5, 7, 9, family);
-        Variety cherry = new Variety("Cerise", 0.2, 3, 5, 7, 9, tomato);
-        Variety roma = new Variety("Roma", 0.3, 3, 5, 7, 9, tomato);
+        Family family = new Family("Solanaceae", new Type("Légume"));
+        Species tomato = new Species("Tomate", 0.3, 3, 5, 2, family);
+        Variety cherry = new Variety("Cerise", 0.2, 3, 5, 2, tomato);
+        Variety roma = new Variety("Roma", 0.3, 3, 5, 2, tomato);
         when(varietyDAO.findBySpeciesName("Tomate")).thenReturn(List.of(cherry, roma));
 
         List<VarietyDTO> result = registryService.getVarietiesBySpecies("Tomate");

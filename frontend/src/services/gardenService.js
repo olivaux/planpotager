@@ -19,17 +19,17 @@ export const deleteGarden = (id) => del(`/garden/${id}`)
 export const addPlantToGarden = (gardenId, { plantId, x, y }) =>
   post(`/garden/${gardenId}/plant`, { plantId, x, y })
 
-export const updatePlantPosition = (gardenId, plantId, { x, y }) =>
-  put(`/garden/${gardenId}/plant/${plantId}/position`, { x, y })
+export const updatePlantPosition = (gardenId, gardenPlantId, { x, y }) =>
+  put(`/garden/${gardenId}/plant/${gardenPlantId}/position`, { x, y })
 
 export const getAvailableStates = (gardenId, plantId) =>
   get(`/garden/${gardenId}/plant/${plantId}/states`)
 
-export const setPlantState = (gardenId, plantId, state) =>
-  put(`/garden/${gardenId}/plant/${plantId}/state`, { state })
+export const setPlantState = (gardenId, gardenPlantId, state) =>
+  put(`/garden/${gardenId}/plant/${gardenPlantId}/state`, { state })
 
-export const removePlantFromGarden = (gardenId, plantId) =>
-  del(`/garden/${gardenId}/plant/${plantId}`)
+export const removePlantFromGarden = (gardenId, gardenPlantId) =>
+  del(`/garden/${gardenId}/plant/${gardenPlantId}`)
 
 export const createArea = (gardenId, area) => post(`/garden/${gardenId}/area`, area)
 

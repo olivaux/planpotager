@@ -37,7 +37,7 @@ class PlantDAOIntegrationTest {
         Variety variety = persistVarietyChain("Tomate Cerise");
         entityManager.persist(new User(EMAIL));
 
-        Plant saved = plantDAO.save(new Plant(variety.getName(), "Graines du Midi", EMAIL));
+        Plant saved = plantDAO.save(new Plant(variety, "Graines du Midi", EMAIL));
         entityManager.flush();
 
         List<Plant> found = plantDAO.findByUserEmail(EMAIL);
@@ -48,27 +48,34 @@ class PlantDAOIntegrationTest {
     void save_shouldThrowDataIntegrityViolation_whenUserEmailDoesNotExist() {
         Variety variety = persistVarietyChain("Tomate Cerise");
 
-        assertThatThrownBy(() -> plantDAO.save(new Plant(variety.getName(), "Graines du Midi", "inconnu@example.com")))
+        assertThatThrownBy(() -> plantDAO.save(new Plant(variety, "Graines du Midi", "inconnu@example.com")))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
     void save_shouldThrowDataIntegrityViolation_whenVarietyDoesNotExist() {
         entityManager.persist(new User(EMAIL));
+        Species species = persistSpeciesChain();
+        Variety unknownVariety = new Variety("Variete Inconnue", 0.2, 3, 5, 2, species);
 
-        assertThatThrownBy(() -> plantDAO.save(new Plant("Variete Inconnue", "Graines du Midi", EMAIL)))
+        assertThatThrownBy(() -> plantDAO.save(new Plant(unknownVariety, "Graines du Midi", EMAIL)))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     private Variety persistVarietyChain(String varietyName) {
+        Species species = persistSpeciesChain();
+        Variety variety = new Variety(varietyName, 0.2, 3, 5, 2, species);
+        entityManager.persist(variety);
+        return variety;
+    }
+
+    private Species persistSpeciesChain() {
         Type type = new Type("Legume");
         entityManager.persist(type);
         Family family = new Family("Solanaceae", type);
         entityManager.persist(family);
-        Species species = new Species("Tomate", 0.3, 3, 5, 7, 9, family);
+        Species species = new Species("Tomate", 0.3, 3, 5, 2, family);
         entityManager.persist(species);
-        Variety variety = new Variety(varietyName, 0.2, 3, 5, 7, 9, species);
-        entityManager.persist(variety);
-        return variety;
+        return species;
     }
 }

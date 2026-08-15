@@ -82,38 +82,38 @@ public class GardenService {
         gardenDAO.delete(garden);
     }
 
-    public GardenDTO addPlantToGarden(String userEmail, Long gardenId, Long plantId, int x, int y) {
+    public GardenPlantDTO addPlantToGarden(String userEmail, Long gardenId, Long plantId, int x, int y) {
         Garden garden = gardenDAO.findById(gardenId)
             .orElseThrow(() -> new IllegalArgumentException("Garden not found"));
-        
+
         checkUserAccess(userEmail, garden);
 
         Plant plant = plantDAO.findById(plantId)
             .orElseThrow(() -> new IllegalArgumentException("Plant not found"));
 
-        garden.addPlant(plant, x, y);
+        GardenPlant gardenPlant = garden.addPlant(plant, x, y);
         gardenDAO.save(garden);
 
-        return new GardenDTO(garden.getId(), garden.getName(), garden.getLongitude(), garden.getLatitude());
-    }
-
-    public GardenPlantDTO getPlantCurrentPosition(String userEmail, Long gardenId, Long plantId) {
-        Garden garden = gardenDAO.findById(gardenId)
-            .orElseThrow(() -> new IllegalArgumentException("Garden not found"));
-
-        checkUserAccess(userEmail, garden);
-
-        GardenPlant gardenPlant = garden.findPlant(plantId);
         return toGardenPlantDTO(gardenPlant);
     }
 
-    public GardenDTO changePlantPosition(String userEmail, Long gardenId, Long plantId, int newX, int newY) {
+    public GardenPlantDTO getPlantCurrentPosition(String userEmail, Long gardenId, Long gardenPlantId) {
         Garden garden = gardenDAO.findById(gardenId)
             .orElseThrow(() -> new IllegalArgumentException("Garden not found"));
-        
+
         checkUserAccess(userEmail, garden);
 
-        garden.updatePlantPosition(plantId, newX, newY);
+        GardenPlant gardenPlant = garden.findGardenPlant(gardenPlantId);
+        return toGardenPlantDTO(gardenPlant);
+    }
+
+    public GardenDTO changePlantPosition(String userEmail, Long gardenId, Long gardenPlantId, int newX, int newY) {
+        Garden garden = gardenDAO.findById(gardenId)
+            .orElseThrow(() -> new IllegalArgumentException("Garden not found"));
+
+        checkUserAccess(userEmail, garden);
+
+        garden.updatePlantPosition(gardenPlantId, newX, newY);
         gardenDAO.save(garden);
 
         return new GardenDTO(garden.getId(), garden.getName(), garden.getLongitude(), garden.getLatitude());
@@ -145,24 +145,24 @@ public class GardenService {
             .toList();
     }
 
-    public GardenDTO setPlantState(String userEmail, Long gardenId, Long plantId, PlantState state) {
+    public GardenDTO setPlantState(String userEmail, Long gardenId, Long gardenPlantId, PlantState state) {
         Garden garden = gardenDAO.findById(gardenId)
             .orElseThrow(() -> new IllegalArgumentException("Garden not found"));
-        
+
         checkUserAccess(userEmail, garden);
 
-        garden.setPlantState(plantId, state);
+        garden.setPlantState(gardenPlantId, state);
         gardenDAO.save(garden);
         return new GardenDTO(garden.getId(), garden.getName(), garden.getLongitude(), garden.getLatitude());
     }
 
-    public GardenDTO removePlantFromGarden(String userEmail, Long gardenId, Long plantId) {
+    public GardenDTO removePlantFromGarden(String userEmail, Long gardenId, Long gardenPlantId) {
         Garden garden = gardenDAO.findById(gardenId)
             .orElseThrow(() -> new IllegalArgumentException("Garden not found"));
-        
+
         checkUserAccess(userEmail, garden);
 
-        garden.removePlant(plantId);
+        garden.removePlant(gardenPlantId);
         gardenDAO.save(garden);
         return new GardenDTO(garden.getId(), garden.getName(), garden.getLongitude(), garden.getLatitude());
     }

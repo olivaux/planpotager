@@ -10,6 +10,7 @@ import eu.planpotager.PlanPotager.config.SecurityConfig;
 import eu.planpotager.PlanPotager.registry.dto.SpeciesDTO;
 import eu.planpotager.PlanPotager.registry.dto.VarietyDTO;
 import eu.planpotager.PlanPotager.registry.service.RegistryService;
+import eu.planpotager.PlanPotager.user.service.CustomOidcUserService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +29,12 @@ class RegistryControllerTest {
     @MockitoBean
     private RegistryService registryService;
 
+    @MockitoBean
+    private CustomOidcUserService customOidcUserService;
+
     @Test
     void getAllSpecies_shouldReturnSpeciesList_whenAuthenticated() throws Exception {
-        SpeciesDTO tomato = new SpeciesDTO("Tomate", 0.3, 3, 5, 7, 9);
+        SpeciesDTO tomato = new SpeciesDTO("Tomate", 0.3, 3, 5, 2);
         when(registryService.getAllSpecies()).thenReturn(List.of(tomato));
 
         mockMvc.perform(get("/api/registry/species").with(oidcLogin()))
@@ -47,7 +51,7 @@ class RegistryControllerTest {
 
     @Test
     void getVarietiesBySpecies_shouldReturnVarietyList_whenAuthenticated() throws Exception {
-        VarietyDTO cherry = new VarietyDTO("Cerise", 0.2, 3, 5, 7, 9);
+        VarietyDTO cherry = new VarietyDTO("Cerise", 0.2, 3, 5, 2);
         when(registryService.getVarietiesBySpecies("Tomate")).thenReturn(List.of(cherry));
 
         mockMvc.perform(get("/api/registry/species/Tomate/varieties").with(oidcLogin()))

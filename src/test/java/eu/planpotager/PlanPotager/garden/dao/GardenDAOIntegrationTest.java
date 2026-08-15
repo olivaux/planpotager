@@ -41,7 +41,7 @@ class GardenDAOIntegrationTest {
         User user = new User(EMAIL);
         entityManager.persist(user);
         Variety variety = persistVarietyChain("Tomate Cerise");
-        Plant plant = new Plant(variety.getName(), "Graines du Midi", EMAIL);
+        Plant plant = new Plant(variety, "Graines du Midi", EMAIL);
         entityManager.persist(plant);
 
         Garden garden = new Garden("Potager du fond", 2.35, 48.85, user);
@@ -64,7 +64,7 @@ class GardenDAOIntegrationTest {
         User user = new User(EMAIL);
         entityManager.persist(user);
         Variety variety = persistVarietyChain("Tomate Cerise");
-        Plant plant = new Plant(variety.getName(), "Graines du Midi", EMAIL);
+        Plant plant = new Plant(variety, "Graines du Midi", EMAIL);
         entityManager.persist(plant);
 
         Garden garden = new Garden("Potager du fond", 2.35, 48.85, user);
