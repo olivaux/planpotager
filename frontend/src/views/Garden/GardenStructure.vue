@@ -10,6 +10,7 @@ import {
   deleteArea,
 } from '../../services/gardenService.js'
 import { useKonvaZoomPan } from '../../composables/useKonvaZoomPan.js'
+import { useGardenBackground } from '../../composables/useGardenBackground.js'
 import { CORNER_KEYS, EDGES, areaToPoints, edgeMidpoint, edgeLength } from '../../utils/areaGeometry.js'
 
 const route = useRoute()
@@ -20,7 +21,8 @@ const areas = ref([]) // AreaDTO[]
 const loading = ref(true)
 const error = ref(null)
 
-const { stageConfig, onWheel } = useKonvaZoomPan({ width: 900, height: 560 })
+const { stageConfig, stagePos, scale, onWheel } = useKonvaZoomPan({ width: 900, height: 560 })
+const { backgroundConfig, areaFillConfig } = useGardenBackground({ stagePos, scale, stageConfig })
 
 // --- Infos potager (nom, coordonnées) ---
 
@@ -163,16 +165,10 @@ async function removeArea(area) {
         <div class="canvas-wrapper">
           <v-stage :config="stageConfig" @wheel="onWheel">
             <v-layer>
+              <v-rect :config="backgroundConfig" />
+
               <template v-for="area in areas" :key="area.id">
-                <v-line
-                  :config="{
-                    points: areaToPoints(area),
-                    closed: true,
-                    stroke: '#aa3bff',
-                    strokeWidth: 2,
-                    fill: 'rgba(170, 59, 255, 0.08)',
-                  }"
-                />
+                <v-line :config="areaFillConfig(area)" />
                 <v-text
                   v-for="[keyA, keyB] in EDGES"
                   :key="`${area.id}-${keyA}-${keyB}`"

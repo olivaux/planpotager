@@ -14,6 +14,7 @@ import {
 import { getAvailablePlants } from '../../services/plantService.js'
 import { useKonvaZoomPan } from '../../composables/useKonvaZoomPan.js'
 import { usePlantImage } from '../../composables/usePlantImage.js'
+import { useGardenBackground } from '../../composables/useGardenBackground.js'
 import { EDGES, areaToPoints, edgeMidpoint, edgeLength } from '../../utils/areaGeometry.js'
 
 const DEFAULT_PLANT_RADIUS = 10
@@ -30,6 +31,7 @@ const loading = ref(true)
 const error = ref(null)
 
 const { stageConfig, stagePos, scale, onWheel } = useKonvaZoomPan({ width: 900, height: 560 })
+const { backgroundConfig, areaFillConfig } = useGardenBackground({ stagePos, scale, stageConfig })
 
 const plantsById = computed(() => new Map(ownedPlants.value.map((p) => [p.id, p])))
 
@@ -206,16 +208,10 @@ async function removeSelectedPlant() {
         <div class="canvas-wrapper" @dragover.prevent @drop="onCanvasDrop">
           <v-stage :config="stageConfig" @wheel="onWheel">
             <v-layer>
+              <v-rect :config="backgroundConfig" />
+
               <template v-for="area in areas" :key="area.id">
-                <v-line
-                  :config="{
-                    points: areaToPoints(area),
-                    closed: true,
-                    stroke: '#aa3bff',
-                    strokeWidth: 2,
-                    fill: 'rgba(170, 59, 255, 0.08)',
-                  }"
-                />
+                <v-line :config="areaFillConfig(area)" />
                 <v-text
                   v-for="[keyA, keyB] in EDGES"
                   :key="`${area.id}-${keyA}-${keyB}`"
