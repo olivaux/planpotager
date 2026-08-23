@@ -25,11 +25,8 @@ public class Species {
     @Column(name = "plantation_end")
     private int plantationEnd;
 
-    @Column(name = "harvest_start")
-    private int harvestStart;
-
-    @Column(name = "harvest_end")
-    private int harvestEnd;
+    @Column(name = "harvest_duration")
+    private int harvestDuration;
 
     @ManyToOne
     @JoinColumn(name = "name_family")
@@ -41,13 +38,12 @@ public class Species {
     protected Species() {
     }
 
-    public Species(String name, Double radius, int plantationStart, int plantationEnd, int harvestStart, int harvestEnd, Family family) {
+    public Species(String name, Double radius, int plantationStart, int plantationEnd, int harvestDuration, Family family) {
         this.name = name;
         this.radius = radius;
         this.plantationStart = plantationStart;
         this.plantationEnd = plantationEnd;
-        this.harvestStart = harvestStart;
-        this.harvestEnd = harvestEnd;
+        this.harvestDuration = harvestDuration;
         this.family = family;
     }
 
@@ -67,12 +63,8 @@ public class Species {
         return plantationEnd;
     }
 
-    public int getHarvestStart() {
-        return harvestStart;
-    }
-
-    public int getHarvestEnd() {
-        return harvestEnd;
+    public int getHarvestDuration() {
+        return harvestDuration;
     }
 
     public Family getFamily() {
