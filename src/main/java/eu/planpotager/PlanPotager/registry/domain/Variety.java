@@ -17,16 +17,13 @@ public class Variety {
     private Double radius;
 
     @Column(name = "plantation_start")
-    private int plantationStart;
+    private Integer plantationStart;
 
     @Column(name = "plantation_end")
-    private int plantationEnd;
+    private Integer plantationEnd;
 
-    @Column(name = "harvest_start")
-    private int harvestStart;
-
-    @Column(name = "harvest_end")
-    private int harvestEnd;
+    @Column(name = "harvest_duration")
+    private Integer harvestDuration;
 
     @ManyToOne
     @JoinColumn(name = "name_species")
@@ -35,13 +32,12 @@ public class Variety {
     protected Variety() {
     }
 
-    public Variety(String name, Double radius, int plantationStart, int plantationEnd, int harvestStart, int harvestEnd, Species species) {
+    public Variety(String name, Double radius, Integer plantationStart, Integer plantationEnd, Integer harvestDuration, Species species) {
         this.name = name;
         this.radius = radius;
         this.plantationStart = plantationStart;
         this.plantationEnd = plantationEnd;
-        this.harvestStart = harvestStart;
-        this.harvestEnd = harvestEnd;
+        this.harvestDuration = harvestDuration;
         this.species = species;
     }
 
@@ -53,23 +49,39 @@ public class Variety {
         return radius;
     }
 
-    public int getPlantationStart() {
+    public Integer getPlantationStart() {
         return plantationStart;
     }
 
-    public int getPlantationEnd() {
+    public Integer getPlantationEnd() {
         return plantationEnd;
     }
 
-    public int getHarvestStart() {
-        return harvestStart;
-    }
-
-    public int getHarvestEnd() {
-        return harvestEnd;
+    public Integer getHarvestDuration() {
+        return harvestDuration;
     }
 
     public Species getSpecies() {
         return species;
+    }
+
+    /**
+     * Valeurs effectives : celles de la variété si renseignées, sinon héritées de l'espèce parente
+     * (cf. sql/data.sql — la majorité des variétés ne surchargent que leur nom).
+     */
+    public Double getEffectiveRadius() {
+        return radius != null ? radius : species.getRadius();
+    }
+
+    public int getEffectivePlantationStart() {
+        return plantationStart != null ? plantationStart : species.getPlantationStart();
+    }
+
+    public int getEffectivePlantationEnd() {
+        return plantationEnd != null ? plantationEnd : species.getPlantationEnd();
+    }
+
+    public int getEffectiveHarvestDuration() {
+        return harvestDuration != null ? harvestDuration : species.getHarvestDuration();
     }
 }

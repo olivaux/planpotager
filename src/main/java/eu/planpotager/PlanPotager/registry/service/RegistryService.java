@@ -32,8 +32,7 @@ public class RegistryService {
                 species.getRadius(),
                 species.getPlantationStart(),
                 species.getPlantationEnd(),
-                species.getHarvestStart(),
-                species.getHarvestEnd());
+                species.getHarvestDuration());
     }
 
     public List<VarietyDTO> getVarietiesBySpecies(String speciesName) {
@@ -45,10 +44,9 @@ public class RegistryService {
     private VarietyDTO toVarietyDTO(Variety variety) {
         return new VarietyDTO(
                 variety.getName(),
-                variety.getRadius(),
-                variety.getPlantationStart(),
-                variety.getPlantationEnd(),
-                variety.getHarvestStart(),
-                variety.getHarvestEnd());
+                variety.getEffectiveRadius(),
+                variety.getEffectivePlantationStart(),
+                variety.getEffectivePlantationEnd(),
+                variety.getEffectiveHarvestDuration());
     }
 }

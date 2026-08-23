@@ -3,6 +3,8 @@ package eu.planpotager.PlanPotager.plant.service;
 import eu.planpotager.PlanPotager.plant.dao.PlantDAO;
 import eu.planpotager.PlanPotager.plant.domain.Plant;
 import eu.planpotager.PlanPotager.plant.dto.PlantDTO;
+import eu.planpotager.PlanPotager.registry.dao.VarietyDAO;
+import eu.planpotager.PlanPotager.registry.domain.Variety;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -10,16 +12,21 @@ import org.springframework.stereotype.Service;
 public class PlantService {
 
     private final PlantDAO plantDAO;
+    private final VarietyDAO varietyDAO;
 
-    public PlantService(PlantDAO plantDAO) {
+    public PlantService(PlantDAO plantDAO, VarietyDAO varietyDAO) {
         this.plantDAO = plantDAO;
+        this.varietyDAO = varietyDAO;
     }
 
-    public PlantDTO addPlant(String variety, String supplier, String userEmail) {
+    public PlantDTO addPlant(String varietyName, String supplier, String userEmail) {
+        Variety variety = varietyDAO.findById(varietyName)
+                .orElseThrow(() -> new IllegalArgumentException("Variety not found"));
+
         Plant plant = new Plant(variety, supplier, userEmail);
-        
+
         plantDAO.save(plant);
-        return new PlantDTO(plant.getId(), plant.getVariety(), plant.getSupplier());
+        return toPlantDTO(plant);
     }
 
     public void removePlant(Long plantId, String userEmail) {
@@ -35,7 +42,14 @@ public class PlantService {
 
     public List<PlantDTO> getAvailablePlants(String userEmail) {
         return plantDAO.findByUserEmail(userEmail).stream()
-                .map(plant -> new PlantDTO(plant.getId(), plant.getVariety(), plant.getSupplier()))
+                .map(this::toPlantDTO)
                 .toList();
+    }
+
+    private PlantDTO toPlantDTO(Plant plant) {
+        Variety variety = plant.getVariety();
+
+        return new PlantDTO(plant.getId(), variety.getName(), plant.getSupplier(),
+                variety.getSpecies().getName(), variety.getEffectiveRadius());
     }
 }
