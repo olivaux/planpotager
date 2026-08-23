@@ -30,14 +30,14 @@ class ProfileServiceTest {
     @Test
     void getProfile_shouldReturnDTO_matchingStoredUser() {
         User stored = new User(EMAIL);
-        stored.setUnit("METRIC");
+        stored.setUnit("cm");
         stored.setLanguage("fr");
         when(userDAO.findByEmail(EMAIL)).thenReturn(Optional.of(stored));
 
         UserDTO result = profileService.getProfile(EMAIL);
 
         assertThat(result.email()).isEqualTo(EMAIL);
-        assertThat(result.unit()).isEqualTo("METRIC");
+        assertThat(result.unit()).isEqualTo("cm");
         assertThat(result.language()).isEqualTo("fr");
     }
 
@@ -47,9 +47,9 @@ class ProfileServiceTest {
         when(userDAO.findByEmail(EMAIL)).thenReturn(Optional.of(stored));
         when(userDAO.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        UserDTO result = profileService.updateProfile(EMAIL, "IMPERIAL", "en");
+        UserDTO result = profileService.updateProfile(EMAIL, "in", "en");
 
-        assertThat(result.unit()).isEqualTo("IMPERIAL");
+        assertThat(result.unit()).isEqualTo("in");
         assertThat(result.language()).isEqualTo("en");
         verify(userDAO).save(stored);
     }

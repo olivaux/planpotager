@@ -35,6 +35,8 @@ onMounted(async () => {
     </dl>
 
     <p v-else>Chargement…</p>
+
+    <RouterLink v-if="profile" class="btn" :to="{ name: 'profile-edit' }">Modifier le profil</RouterLink>
   </div>
 </template>
 
@@ -53,5 +55,10 @@ dt {
 dd {
   margin: 0;
   color: var(--text-h);
+}
+
+a.btn {
+  display: inline-block;
+  margin-top: 16px;
 }
 </style>

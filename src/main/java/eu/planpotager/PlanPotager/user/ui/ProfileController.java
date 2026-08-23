@@ -4,9 +4,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import eu.planpotager.PlanPotager.user.dto.UpdateProfileRequest;
 import eu.planpotager.PlanPotager.user.dto.UserDTO;
 import eu.planpotager.PlanPotager.user.service.ProfileService;
 
@@ -23,5 +26,12 @@ public class ProfileController {
     @GetMapping
     public ResponseEntity<UserDTO> getProfile(@AuthenticationPrincipal OidcUser principal) {
         return ResponseEntity.ok(profileService.getProfile(principal.getEmail()));
+    }
+
+    @PutMapping
+    public ResponseEntity<UserDTO> updateProfile(@RequestBody UpdateProfileRequest request,
+            @AuthenticationPrincipal OidcUser principal) {
+        UserDTO profile = profileService.updateProfile(principal.getEmail(), request.unit(), request.language());
+        return ResponseEntity.ok(profile);
     }
 }

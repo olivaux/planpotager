@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../composables/useAuthStore.js'
 import AuthAction from '../views/Auth/AuthAction.vue'
 import Profile from '../views/Profile/Profile.vue'
+import EditProfile from '../views/Profile/EditProfile.vue'
 import CatalogView from '../views/Registry/CatalogView.vue'
 import AddPlant from '../views/Plant/AddPlant.vue'
 import MyPlants from '../views/Plant/MyPlants.vue'
@@ -15,6 +16,7 @@ const routes = [
   { path: '/signup', name: 'signup', component: AuthAction, meta: { mode: 'signup' } },
   { path: '/login', name: 'login', component: AuthAction, meta: { mode: 'login' } },
   { path: '/profile', name: 'profile', component: Profile, meta: { requiresAuth: true } },
+  { path: '/profile/edit', name: 'profile-edit', component: EditProfile, meta: { requiresAuth: true } },
   { path: '/catalog', name: 'catalog', component: CatalogView, meta: { requiresAuth: true } },
   { path: '/plant/add', name: 'plant-add', component: AddPlant, meta: { requiresAuth: true } },
   { path: '/plant/list', name: 'plant-list', component: MyPlants, meta: { requiresAuth: true } },
