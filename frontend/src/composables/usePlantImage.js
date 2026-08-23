@@ -3,7 +3,7 @@ import defaultImage from '../assets/default.png'
 
 const speciesImageUrls = import.meta.glob('../assets/*.png', { eager: true, import: 'default' })
 
-function resolveImageUrl(species) {
+export function resolveSpeciesImageUrl(species) {
   if (!species) {
     return defaultImage
   }
@@ -13,7 +13,7 @@ function resolveImageUrl(species) {
 const loadedImages = new Map()
 
 export function usePlantImage(species) {
-  const url = resolveImageUrl(species)
+  const url = resolveSpeciesImageUrl(species)
 
   if (!loadedImages.has(url)) {
     const image = ref(null)

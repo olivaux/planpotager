@@ -2,12 +2,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { getAllSpecies, getVarietiesBySpecies } from '../../services/registryService.js'
 import { addPlant } from '../../services/plantService.js'
+import { resolveSpeciesImageUrl } from '../../composables/usePlantImage.js'
 
 
 const species = ref([])
 const speciesError = ref(null)
 
 const selectedSpecies = ref('')
+const speciesImageUrl = computed(() => resolveSpeciesImageUrl(selectedSpecies.value))
 const varieties = ref([])
 const varietiesError = ref(null)
 const loadingVarieties = ref(false)
@@ -74,6 +76,8 @@ async function submit() {
   <div class="page page-narrow">
     <h1>Ajouter une plante</h1>
 
+    <img :src="speciesImageUrl" :alt="selectedSpecies" class="species-preview" />
+
     <p v-if="submitted" class="success">Plante ajoutée à votre compte.</p>
     <p v-if="submitError" class="error">{{ submitError }}</p>
     <p v-if="speciesError" class="error">{{ speciesError }}</p>
@@ -109,6 +113,12 @@ async function submit() {
 </template>
 
 <style scoped>
+.species-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+}
+
 form {
   display: flex;
   flex-direction: column;
