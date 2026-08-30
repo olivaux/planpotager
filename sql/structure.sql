@@ -12,6 +12,7 @@ CREATE TABLE Garden(
    name VARCHAR(50)  NOT NULL,
    location_Longitude DOUBLE  ,
    location_Latitude DOUBLE  ,
+   score DOUBLE  ,
    email VARCHAR(50)  NOT NULL,
    PRIMARY KEY(id_garden),
    FOREIGN KEY(email) REFERENCES User_(email)

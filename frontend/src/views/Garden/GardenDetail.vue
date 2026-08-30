@@ -34,10 +34,28 @@ const { stageConfig, stagePos, scale, onWheel } = useKonvaZoomPan({ width: 900, 
 const { backgroundConfig, areaFillConfig } = useGardenBackground({ stagePos, scale, stageConfig })
 
 const plantsById = computed(() => new Map(ownedPlants.value.map((p) => [p.id, p])))
+const plantsByGardenPlantId = computed(() => new Map(plants.value.map((p) => [p.id, p])))
 
 const selectedGardenPlantId = ref(null)
 const selectedPlant = computed(
   () => plants.value.find((p) => p.id === selectedGardenPlantId.value) ?? null,
+)
+
+const associationLines = computed(() =>
+  (garden.value?.associationLinks ?? [])
+    .map((link) => {
+      const from = plantsByGardenPlantId.value.get(link.plantId1)
+      const to = plantsByGardenPlantId.value.get(link.plantId2)
+      if (!from || !to) {
+        return null
+      }
+      return {
+        key: `${link.plantId1}-${link.plantId2}`,
+        points: [from.x, from.y, to.x, to.y],
+        stroke: link.positive ? '#2c8a3d' : '#c0392b',
+      }
+    })
+    .filter((line) => line !== null),
 )
 
 function plantRadius(plantId) {
@@ -97,6 +115,8 @@ async function onCanvasDrop(event) {
   try {
     const created = await addPlantToGarden(gardenId, { plantId, x, y })
     plants.value = [...plants.value, created]
+    // addPlantToGarden ne renvoie que la plante créée (pas de score à jour) : on recharge le potager à part.
+    garden.value = await getGarden(gardenId)
   } catch {
     error.value = 'Impossible de placer cette plante.'
   }
@@ -110,7 +130,7 @@ async function onPlantDragEnd(plant, konvaEvent) {
   plant.x = x
   plant.y = y
   try {
-    await updatePlantPosition(gardenId, plant.id, { x, y })
+    garden.value = await updatePlantPosition(gardenId, plant.id, { x, y })
   } catch {
     error.value = 'Impossible de déplacer cette plante.'
   }
@@ -142,7 +162,7 @@ async function removeSelectedPlant() {
     return
   }
   try {
-    await removePlantFromGarden(gardenId, selectedPlant.value.id)
+    garden.value = await removePlantFromGarden(gardenId, selectedPlant.value.id)
     plants.value = plants.value.filter((p) => p.id !== selectedPlant.value.id)
     selectedGardenPlantId.value = null
   } catch {
@@ -160,7 +180,13 @@ async function removeSelectedPlant() {
 
     <template v-else-if="garden">
       <div class="garden-header">
-        <h1>{{ garden.name }}</h1>
+        <div>
+          <h1>{{ garden.name }}</h1>
+          <p v-if="garden.score !== null && garden.score !== undefined" class="garden-score">
+            Score d'association : {{ garden.score.toFixed(1) }}/10
+          </p>
+          <p v-else class="garden-score hint">Score d'association : aucune association détectée</p>
+        </div>
         <nav class="garden-nav">
           <RouterLink :to="{ name: 'garden-structure', params: { id: gardenId } }">
             Structure du potager
@@ -225,6 +251,12 @@ async function removeSelectedPlant() {
                 />
               </template>
 
+              <v-line
+                v-for="line in associationLines"
+                :key="line.key"
+                :config="{ points: line.points, stroke: line.stroke, strokeWidth: 3, dash: [6, 4], listening: false }"
+              />
+
               <v-group
                 v-for="plant in plants"
                 :key="plant.id"
@@ -273,6 +305,11 @@ async function removeSelectedPlant() {
 .hint {
   font-size: 13px;
   color: var(--text);
+}
+
+.garden-score {
+  margin: 4px 0 0;
+  font-size: 14px;
 }
 
 .plant-panel {

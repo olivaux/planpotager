@@ -127,7 +127,7 @@ La plateforme doit pouvoir :
 - Fournir une limite de place pour chaque fruit/legumes/Aromates/fleurs dans un potager
 - Empecher les plantations de se chevaucher entre elles ou depasser les limites sur un potager
 - prevenir lorsque la plantation et la récolte doit se faire dans le potager.
-- Ajouter un (+1) pour les bonnes associations et un (-1) pour les mauvaises associations. Un score final permet de connaître la pertinence du potager
+- Ajouter un (+1) pour les bonnes associations et un (-1) pour les mauvaises associations. Un score est calculé sur chaque paire de plantes du potager dans un rayon de 1 mètre. les paires sans association enregistrée ne comptent pas. Un score unique pour l'ensemble du potager permet de connaître la pertinence de celui-ci.
 - Mettre en avant si une plantation à déjà été mise en place à cet androit l’an passé
 - Prevenir en cas de secheresse d'arroser (selon ville renseignée)
 
@@ -454,8 +454,9 @@ Utilisateur
 2. Ajouter un grainetier existant
 3. Placer le grainetier sur la grille du potager
 4. La plante ne doit pas en superposer une autre (en fonction de sa taille requise)
-5. Analyse des bonnes/mauvaises associations
-6. Mise à jour de la note
+5. Analyse des bonnes/mauvaises associations dans un rayon d'1 mètre autour de la plante placée
+6. Affichage d'une ligne verte (pour une bonne association) ou rouge (pour une mauvaise association) entre chaque paire de plantes concernée dans le rayon.
+7. Mise à jour du score du potager (score unique pour l'ensemble du potager, pas de note par plante)
 
 ##### Post-conditions
 Aucune
@@ -464,12 +465,14 @@ Aucune
 
 ##### Exceptions
 
+- Aucune association enregistrée pour aucune paire de plantes du potager (bonnes + mauvaises = 0) : le score n'est pas calculable (division par zéro). Proposition à confirmer : ne pas afficher de score plutôt qu'une valeur par défaut arbitraire (0/10 ou 5/10).
+
 ##### Diagramme d'activité
 
 ```plantuml
 @startuml
   skin rose
-  title Ajout d'un légume sur la grille et calcul des scores
+  title Ajout d'un légume sur la grille et calcul du score du potager
 
   start
 
@@ -482,34 +485,43 @@ Aucune
   endwhile
   :Placer le légume L en (x, y);
 
-  :Récupérer les plantes voisines (V)
-  (8 cases adjacentes);
+  :Récupérer toutes les paires de plantes
+  du potager distantes de moins d'1 mètre
+  (rayon fixe, indépendant du rayon
+  d'espace minimum requis par plante);
 
-  while (Pour chaque plante voisine L->V)
+  :bonnes = 0;
+  :mauvaises = 0;
 
-    if (Association == "Bonne" ?)
-      :L.score +=1 ;
-    else if (Association == "Mauvaise" ?)
-      :L.score -=1 Point;
-    else
-      :L.score =+0 Point;
+  while (Pour chaque paire (A, B) dans le rayon)
+    if (Association(A, B) enregistrée ?) then (oui)
+      if (Association == "Bonne" ?) then (oui)
+        :bonnes += 1;
+        :Afficher une ligne verte entre A et B;
+      else (non, "Mauvaise")
+        :mauvaises += 1;
+        :Afficher une ligne rouge entre A et B;
+      endif
+    else (non, neutre)
     endif
   endwhile
 
-  :Calculer la note sur 10
-  note = (score / score_max + 1) / 2 * 10;
+  if (bonnes + mauvaises > 0 ?) then (oui)
+    :Calculer le score du potager sur 10
+    score = bonnes / (bonnes + mauvaises) * 10;
+  else (non)
+    :Aucun score affiché;
+  endif
 
-  :Mettre à jour les notes
-  de L et de chaque voisin P;
-
-  :Afficher la grille mise à jour;
+  :Afficher la grille mise à jour
+  avec le score et les lignes d'association;
 
   stop
 
 @enduml
 ```
 
-// Mettre a jour score chaque plante autour selon cet ajout
+Note : le score est recalculé pour l'ensemble du potager (toutes les paires distantes de moins d'1 mètre) à chaque ajout, déplacement ou suppression de plante — pas seulement pour la plante concernée et son voisinage immédiat, afin d'éviter tout double comptage ou score partiellement obsolète.
 
 
 ### 4.7. Notification à l'utilisateur
@@ -593,6 +605,7 @@ Utilisateur
 ##### Description
 1. On selectionne la plante du potager
 2. On la déplace, la plante , la recolte ou la supprime. 
+3. On met à jour les associations et score d'association
 
 ##### Post-conditions
 Mise a jour des paramètres de la plante

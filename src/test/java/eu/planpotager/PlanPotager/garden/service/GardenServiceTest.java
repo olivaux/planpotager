@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import eu.planpotager.PlanPotager.garden.dao.AreaDAO;
@@ -22,6 +23,8 @@ import eu.planpotager.PlanPotager.registry.domain.Family;
 import eu.planpotager.PlanPotager.registry.domain.Species;
 import eu.planpotager.PlanPotager.registry.domain.Type;
 import eu.planpotager.PlanPotager.registry.domain.Variety;
+import eu.planpotager.PlanPotager.registry.dto.AssociationDTO;
+import eu.planpotager.PlanPotager.registry.service.RegistryService;
 import eu.planpotager.PlanPotager.user.dao.UserDAO;
 import eu.planpotager.PlanPotager.user.domain.User;
 import java.util.List;
@@ -50,6 +53,9 @@ class GardenServiceTest {
     @Mock
     private PlantDAO plantDAO;
 
+    @Mock
+    private RegistryService registryService;
+
     @InjectMocks
     private GardenService gardenService;
 
@@ -57,6 +63,13 @@ class GardenServiceTest {
         Family family = new Family("Solanacees", new Type("Legume"));
         Species species = new Species("Tomate", 0.3, 3, 5, 2, family);
         return new Variety("Tomate Cerise", 0.2, 3, 5, 2, species);
+    }
+
+    private Plant plantOfSpecies(String speciesName) {
+        Family family = new Family("Famille", new Type("Legume"));
+        Species species = new Species(speciesName, 0.3, 3, 5, 2, family);
+        Variety variety = new Variety(speciesName + " Variete", 0.2, 3, 5, 2, species);
+        return new Plant(variety, "Fournisseur", USER_EMAIL);
     }
 
     @Test
@@ -113,6 +126,90 @@ class GardenServiceTest {
 
         assertThatThrownBy(() -> gardenService.getGardenById(OTHER_USER_EMAIL, 1L))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void getGardenById_shouldComputeFullScore_whenNearbyPlantsHaveGoodAssociation() {
+        User user = new User(USER_EMAIL);
+        Garden garden = new Garden("Potager du fond", 2.35, 48.85, user);
+        garden.addPlant(plantOfSpecies("Tomate"), 0, 0);
+        garden.addPlant(plantOfSpecies("Basilic"), 50, 0);
+        when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
+        when(registryService.getAssociation("Tomate", "Basilic"))
+                .thenReturn(Optional.of(new AssociationDTO("Tomate", "Basilic", true)));
+
+        GardenDTO result = gardenService.getGardenById(USER_EMAIL, 1L);
+
+        assertThat(result.score()).isEqualTo(10.0);
+        assertThat(result.associationLinks()).hasSize(1);
+        assertThat(result.associationLinks().get(0).positive()).isTrue();
+        verify(gardenDAO).save(garden);
+    }
+
+    @Test
+    void getGardenById_shouldComputeZeroScore_whenNearbyPlantsHaveBadAssociation() {
+        User user = new User(USER_EMAIL);
+        Garden garden = new Garden("Potager du fond", 2.35, 48.85, user);
+        garden.addPlant(plantOfSpecies("Tomate"), 0, 0);
+        garden.addPlant(plantOfSpecies("Fenouil"), 50, 0);
+        when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
+        when(registryService.getAssociation("Tomate", "Fenouil"))
+                .thenReturn(Optional.of(new AssociationDTO("Tomate", "Fenouil", false)));
+
+        GardenDTO result = gardenService.getGardenById(USER_EMAIL, 1L);
+
+        assertThat(result.score()).isEqualTo(0.0);
+        assertThat(result.associationLinks()).hasSize(1);
+        assertThat(result.associationLinks().get(0).positive()).isFalse();
+    }
+
+    @Test
+    void getGardenById_shouldAverageGoodAndBadAssociations_acrossMultiplePairs() {
+        User user = new User(USER_EMAIL);
+        Garden garden = new Garden("Potager du fond", 2.35, 48.85, user);
+        garden.addPlant(plantOfSpecies("Tomate"), 0, 0);
+        garden.addPlant(plantOfSpecies("Basilic"), 50, 0);
+        garden.addPlant(plantOfSpecies("Fenouil"), 0, 50);
+        when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
+        when(registryService.getAssociation("Tomate", "Basilic"))
+                .thenReturn(Optional.of(new AssociationDTO("Tomate", "Basilic", true)));
+        when(registryService.getAssociation("Tomate", "Fenouil"))
+                .thenReturn(Optional.of(new AssociationDTO("Tomate", "Fenouil", false)));
+
+        GardenDTO result = gardenService.getGardenById(USER_EMAIL, 1L);
+
+        assertThat(result.score()).isEqualTo(5.0);
+        assertThat(result.associationLinks()).hasSize(2);
+    }
+
+    @Test
+    void getGardenById_shouldReturnNullScore_whenNoAssociationRegisteredForNearbyPlants() {
+        User user = new User(USER_EMAIL);
+        Garden garden = new Garden("Potager du fond", 2.35, 48.85, user);
+        garden.addPlant(plantOfSpecies("Tomate"), 0, 0);
+        garden.addPlant(plantOfSpecies("Basilic"), 50, 0);
+        when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
+        when(registryService.getAssociation("Tomate", "Basilic")).thenReturn(Optional.empty());
+
+        GardenDTO result = gardenService.getGardenById(USER_EMAIL, 1L);
+
+        assertThat(result.score()).isNull();
+        assertThat(result.associationLinks()).isEmpty();
+    }
+
+    @Test
+    void getGardenById_shouldIgnorePlants_whenBeyondAssociationRadius() {
+        User user = new User(USER_EMAIL);
+        Garden garden = new Garden("Potager du fond", 2.35, 48.85, user);
+        garden.addPlant(plantOfSpecies("Tomate"), 0, 0);
+        garden.addPlant(plantOfSpecies("Basilic"), 200, 0);
+        when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
+
+        GardenDTO result = gardenService.getGardenById(USER_EMAIL, 1L);
+
+        assertThat(result.score()).isNull();
+        assertThat(result.associationLinks()).isEmpty();
+        verifyNoInteractions(registryService);
     }
 
     @Test
@@ -188,6 +285,35 @@ class GardenServiceTest {
     }
 
     @Test
+    void addPlantToGarden_shouldRecomputeAndPersistAssociationScore() {
+        User user = new User(USER_EMAIL);
+        Garden garden = mock(Garden.class);
+        Plant tomatoRef = plantOfSpecies("Tomate");
+        Plant basilRef = plantOfSpecies("Basilic");
+        GardenPlant existingBasilPlant = mock(GardenPlant.class);
+        GardenPlant createdTomatoPlant = mock(GardenPlant.class);
+        when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
+        when(garden.getUser()).thenReturn(user);
+        when(plantDAO.findById(42L)).thenReturn(Optional.of(tomatoRef));
+        when(garden.addPlant(tomatoRef, 0, 0)).thenReturn(createdTomatoPlant);
+        when(garden.getGardenPlants()).thenReturn(List.of(existingBasilPlant, createdTomatoPlant));
+        when(existingBasilPlant.getX()).thenReturn(50);
+        when(existingBasilPlant.getY()).thenReturn(0);
+        when(existingBasilPlant.getPlant()).thenReturn(basilRef);
+        when(createdTomatoPlant.getX()).thenReturn(0);
+        when(createdTomatoPlant.getY()).thenReturn(0);
+        when(createdTomatoPlant.getPlant()).thenReturn(tomatoRef);
+        when(registryService.getAssociation("Basilic", "Tomate"))
+                .thenReturn(Optional.of(new AssociationDTO("Basilic", "Tomate", true)));
+        when(gardenDAO.save(garden)).thenReturn(garden);
+
+        gardenService.addPlantToGarden(USER_EMAIL, 1L, 42L, 0, 0);
+
+        verify(garden).setScore(10.0);
+        verify(gardenDAO).save(garden);
+    }
+
+    @Test
     void addPlantToGarden_shouldThrow_whenUserDoesNotOwnGarden() {
         User owner = new User(USER_EMAIL);
         Garden garden = mock(Garden.class);
@@ -244,6 +370,34 @@ class GardenServiceTest {
         verify(garden).updatePlantPosition(42L, 30, 40);
         verify(gardenDAO).save(garden);
         assertThat(result.id()).isEqualTo(1L);
+    }
+
+    @Test
+    void changePlantPosition_shouldRecomputeAssociationScore_afterMove() {
+        User user = new User(USER_EMAIL);
+        Garden garden = mock(Garden.class);
+        GardenPlant tomatoPlant = mock(GardenPlant.class);
+        GardenPlant basilPlant = mock(GardenPlant.class);
+        Plant tomatoRef = plantOfSpecies("Tomate");
+        Plant basilRef = plantOfSpecies("Basilic");
+        when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
+        when(garden.getUser()).thenReturn(user);
+        when(garden.getGardenPlants()).thenReturn(List.of(tomatoPlant, basilPlant));
+        when(tomatoPlant.getX()).thenReturn(0);
+        when(tomatoPlant.getY()).thenReturn(0);
+        when(tomatoPlant.getPlant()).thenReturn(tomatoRef);
+        when(basilPlant.getX()).thenReturn(50);
+        when(basilPlant.getY()).thenReturn(0);
+        when(basilPlant.getPlant()).thenReturn(basilRef);
+        when(registryService.getAssociation("Tomate", "Basilic"))
+                .thenReturn(Optional.of(new AssociationDTO("Tomate", "Basilic", true)));
+        when(gardenDAO.save(garden)).thenReturn(garden);
+
+        gardenService.changePlantPosition(USER_EMAIL, 1L, 42L, 50, 0);
+
+        verify(garden).updatePlantPosition(42L, 50, 0);
+        verify(garden).setScore(10.0);
+        verify(gardenDAO).save(garden);
     }
 
     @Test
@@ -306,6 +460,25 @@ class GardenServiceTest {
         verify(garden).removePlant(42L);
         verify(gardenDAO).save(garden);
         assertThat(result.id()).isEqualTo(1L);
+    }
+
+    @Test
+    void removePlantFromGarden_shouldRecomputeAssociationScore_afterRemoval() {
+        User user = new User(USER_EMAIL);
+        Garden garden = mock(Garden.class);
+        GardenPlant remainingTomatoPlant = mock(GardenPlant.class);
+        Plant tomatoRef = plantOfSpecies("Tomate");
+        when(gardenDAO.findById(1L)).thenReturn(Optional.of(garden));
+        when(garden.getUser()).thenReturn(user);
+        when(garden.getGardenPlants()).thenReturn(List.of(remainingTomatoPlant));
+        when(gardenDAO.save(garden)).thenReturn(garden);
+
+        gardenService.removePlantFromGarden(USER_EMAIL, 1L, 42L);
+
+        verify(garden).removePlant(42L);
+        verify(garden).setScore(null);
+        verify(gardenDAO).save(garden);
+        verifyNoInteractions(registryService);
     }
 
     @Test

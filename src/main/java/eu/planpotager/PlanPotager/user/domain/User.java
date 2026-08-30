@@ -11,10 +11,10 @@ public class User {
 
     @Id
     private String email;
-    private String unit;
+    private String unit = "cm";
 
     @Column(name = "language_")
-    private String language;
+    private String language = "fr";
 
     @Column(name = "provider_id")
     private String providerId;

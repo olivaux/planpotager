@@ -31,6 +31,8 @@ public class Garden {
     @Column(name = "location_latitude")
     private Double latitude;
 
+    private Double score;
+
     @ManyToOne
     @JoinColumn(name = "email")
     private User user;
@@ -78,6 +80,14 @@ public class Garden {
 
     public User getUser() {
         return user;
+    }
+
+    public Double getScore() {
+        return score;
+    }
+
+    public void setScore(Double score) {
+        this.score = score;
     }
 
     public List<GardenPlant> getGardenPlants() {

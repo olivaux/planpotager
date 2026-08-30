@@ -109,20 +109,24 @@
         - [Liste des objets candidats](#liste-des-objets-candidats-18)
         - [Description des interactions entre objets](#description-des-interactions-entre-objets-18)
         - [Diagramme de classe consolidé pour le Use case](#diagramme-de-classe-consolidé-pour-le-use-case-18)
-    - [Notification](#notification)
-      - [Lecture Notification](#lecture-notification)
+      - [Score d'association du potager](#score-dassociation-du-potager)
         - [Liste des objets candidats](#liste-des-objets-candidats-19)
         - [Description des interactions entre objets](#description-des-interactions-entre-objets-19)
         - [Diagramme de classe consolidé pour le Use case](#diagramme-de-classe-consolidé-pour-le-use-case-19)
-      - [Notification utilisateur](#notification-utilisateur)
+    - [Notification](#notification)
+      - [Lecture Notification](#lecture-notification)
         - [Liste des objets candidats](#liste-des-objets-candidats-20)
         - [Description des interactions entre objets](#description-des-interactions-entre-objets-20)
         - [Diagramme de classe consolidé pour le Use case](#diagramme-de-classe-consolidé-pour-le-use-case-20)
-    - [Articles](#articles)
-      - [Accès aux articles](#accès-aux-articles)
+      - [Notification utilisateur](#notification-utilisateur)
         - [Liste des objets candidats](#liste-des-objets-candidats-21)
         - [Description des interactions entre objets](#description-des-interactions-entre-objets-21)
         - [Diagramme de classe consolidé pour le Use case](#diagramme-de-classe-consolidé-pour-le-use-case-21)
+    - [Articles](#articles)
+      - [Accès aux articles](#accès-aux-articles)
+        - [Liste des objets candidats](#liste-des-objets-candidats-22)
+        - [Description des interactions entre objets](#description-des-interactions-entre-objets-22)
+        - [Diagramme de classe consolidé pour le Use case](#diagramme-de-classe-consolidé-pour-le-use-case-22)
   - [5. Regroupement des classes](#5-regroupement-des-classes)
     - [Groupe domaine](#groupe-domaine)
     - [Groupe domaine et cycle de vie](#groupe-domaine-et-cycle-de-vie)
@@ -359,6 +363,7 @@ package "PlanPotager" {
       class FamilyDTO
       class SpeciesDTO
       class VarietyDTO
+      class AssociationDTO
     }
     package "service" as sR {
       class RegistryService <<@Service>>
@@ -390,6 +395,7 @@ package "PlanPotager" {
       class GardenDTO
       class AreaDTO
       class PlantDTO
+      class AssociationLinkDTO
     }
     package "service" as sG {
       class GardenService <<@Service>>
@@ -408,6 +414,7 @@ package "PlanPotager" {
     dtoG ..> uiG : retourne
     sG ..> daoG : appelle
     daoG ..> dG : gère (JPA)
+    sG ..> sR : appelle (vérification des associations)
   }
 
   package "Notification"  #LightGrey {
@@ -565,7 +572,7 @@ scheduler --> svc : déclenche (cron 8h00)
 
 ### Compte
 
-⚠️ Cette section a remplacé le flux de signup/login par email (obsolète) suite à la correction de trajectoire documentée dans `temp/arrangement-oauth2-auth.md` : PlanPotager délègue entièrement l'authentification à Google (OAuth2/OIDC), il n'existe plus d'endpoint applicatif `POST /api/auth/signup` ni `POST /api/auth/login`.
+Cette section a remplacé le flux de signup/login par email (obsolète) suite à la correction de trajectoire documentée dans `temp/arrangement-oauth2-auth.md` : PlanPotager délègue entièrement l'authentification à Google (OAuth2/OIDC), il n'existe plus d'endpoint applicatif `POST /api/auth/signup` ni `POST /api/auth/login`.
 
 #### Connexion via Google (OAuth2 / OIDC)
 
@@ -1287,11 +1294,13 @@ svc -> repo : findById(gardenId)
 repo --> svc : Optional<Garden>
 svc -> enG : addPlant(plantId, x, y)
 return
+svc -> svc : recomputeAssociationScore(garden)
+note right : voir UC "Score d'association du potager"
 svc -> repo : save(garden)
 repo --> svc : Garden
 svc --> ctrl : GardenDTO
 ctrl --> vue : 201 Created\n{ GardenDTO }
-vue -> vue : rafraîchit le plan du potager
+vue -> vue : rafraîchit le plan du potager\n(score + lignes d'association)
 
 @enduml
 ~~~
@@ -1450,9 +1459,11 @@ vue -> ctrl : GET /api/garden/{id}
 ctrl -> svc : getGardenById(id)
 svc -> repo : findById(id)
 repo --> svc : Optional<Garden>
+svc -> svc : recomputeAssociationScore(garden)\net save(garden)
+note right : voir UC "Score d'association du potager"
 svc --> ctrl : GardenDTO
 ctrl --> vue : 200 OK\n{ GardenDTO }
-vue -> vue : affiche le suivi du potager
+vue -> vue : affiche le suivi du potager\n(score + lignes d'association)
 
 @enduml
 ~~~
@@ -1617,11 +1628,13 @@ svc -> repo : findById(gardenId)
 repo --> svc : Optional<Garden>
 svc -> enG : updatePlantPosition(plantId, newX, newY)
 return
+svc -> svc : recomputeAssociationScore(garden)
+note right : voir UC "Score d'association du potager"
 svc -> repo : save(garden)
 repo --> svc : Garden
 svc --> ctrl : GardenDTO
 ctrl --> vue : 200 OK\n{ GardenDTO }
-vue -> vue : rafraîchit le plan du potager
+vue -> vue : rafraîchit le plan du potager\n(score + lignes d'association)
 
 @enduml
 ~~~
@@ -2212,11 +2225,13 @@ svc -> repo : findById(gardenId)
 repo --> svc : Optional<Garden>
 svc -> enG : removePlant(plantId)
 return
+svc -> svc : recomputeAssociationScore(garden)
+note right : voir UC "Score d'association du potager"
 svc -> repo : save(garden)
 repo --> svc : Garden
 svc --> ctrl : GardenDTO
 ctrl --> vue : 200 OK\n{ GardenDTO }
-vue -> vue : rafraîchit le plan du potager
+vue -> vue : rafraîchit le plan du potager\n(score + lignes d'association)
 
 @enduml
 ~~~
@@ -2264,6 +2279,116 @@ Garden "1" *-- "0..*" GardenPlant
 
 @enduml
 ~~~
+
+#### Score d'association du potager
+
+##### Liste des objets candidats
+
+| Analyse (Arrington)         | Vue.js (Frontend) | Spring Boot (Backend) | Annotation  |
+| ----------------------------- | ------------------ | ------------------------ | ------------- |
+| GardenWorkFlow (control)    | —                  | GardenService            | @Service    |
+| RegistryWorkFlow (control)  | —                  | RegistryService          | @Service    |
+| Garden (entity)             | —                  | Garden                   | @Entity     |
+| Association (entity)        | —                  | Association              | @Entity     |
+| GardenDAO (life cycle)      | —                  | GardenDAO                | @Repository |
+| AssociationDAO (life cycle) | —                  | AssociationDAO           | @Repository |
+
+##### Description des interactions entre objets
+
+Logique interne, déclenchée par 4 points d'entrée distincts (voir §Sélection d'un potager, §Ajout d'une Plante au potager, §Changement Position Plante Potager, §Retrait d'une plante du potager). Exemple ci-dessous pour le déclenchement depuis `getGardenById` :
+
+~~~plantuml
+@startuml
+title Recalcul et persistance du score d'association - logique interne
+skin rose
+
+control "GardenService <<@Service>>" as svc
+control "RegistryService <<@Service>>" as reg
+entity "Garden <<@Entity>>" as enG
+participant "GardenDAO <<@Repository>>" as repoG
+participant "AssociationDAO <<@Repository>>" as repoA
+
+svc -> svc : recomputeAssociationScore(garden)
+svc -> svc : calcule toutes les paires de GardenPlant\ndistantes de moins d'1 mètre\n(rayon fixe, indépendant du rayon\nd'espace minimum requis par plante)
+
+loop pour chaque paire (A, B) dans le rayon
+  svc -> reg : getAssociation(A.species, B.species)
+  reg -> repoA : recherche symétrique\n(name_species, name_species_1)\ndans les deux sens
+  repoA --> reg : Optional<Association>
+  reg --> svc : Optional<AssociationDTO>
+end
+
+svc -> svc : score = bonnes / (bonnes + mauvaises) * 10\n(score = null si bonnes + mauvaises = 0)
+svc -> enG : setScore(score)
+svc -> repoG : save(garden)
+repoG --> svc : Garden
+svc -> svc : construit GardenDTO\n(score + associationLinks pour l'affichage)
+
+@enduml
+~~~
+
+##### Diagramme de classe consolidé pour le Use case
+
+~~~plantuml
+@startuml
+skin rose
+
+class GardenService <<@Service>> {
+  - recomputeAssociationScore(garden : Garden) : List<AssociationLinkDTO>
+}
+
+class RegistryService <<@Service>> {
+  + getAssociation(speciesA : String, speciesB : String) : Optional<AssociationDTO>
+}
+
+class Garden <<@Entity>> {
+  - score : Double
+}
+
+class GardenDTO {
+  - score : Double
+  - associationLinks : List<AssociationLinkDTO>
+}
+
+class AssociationLinkDTO {
+  - plantId1 : Long
+  - plantId2 : Long
+  - positive : boolean
+}
+
+class AssociationDTO {
+  - speciesA : String
+  - speciesB : String
+  - positive : boolean
+}
+
+class Association <<@Entity>> {
+  @EmbeddedId
+  - id : AssociationId
+  @ManyToOne
+  - species : Species
+  @ManyToOne
+  - associatedSpecies : Species
+  - positive : boolean
+}
+
+interface AssociationDAO <<@Repository>> {
+  + findBySpeciesName(speciesName : String) : List<Association>
+}
+
+interface GardenDAO <<@Repository>> {
+  + save(garden : Garden) : Garden
+}
+
+GardenService "1" --> "1" GardenDAO
+GardenService "1" --> "1" RegistryService
+RegistryService "1" --> "1" AssociationDAO
+AssociationDAO "1" ..> "0..*" Association
+
+@enduml
+~~~
+
+Note : le score est recalculé sur l'ensemble des paires du potager (pas seulement celles touchant la dernière plante modifiée) à chaque déclenchement — voir `specs/01 §4.6` pour la justification (évite le double comptage et les scores partiellement obsolètes). `RegistryService.getAssociation` garantit une recherche symétrique : peu importe l'ordre de stockage (`name_species`/`name_species_1`) dans `AssociationDAO`, l'appelant n'a pas à s'en soucier.
 
 ---
 
@@ -2568,6 +2693,7 @@ class Garden <<@Entity>> {
   - name : String
   - longitude : Double
   - latitude : Double
+  - score : Double
   @ManyToOne
   - user : User
   @OneToMany
@@ -2702,6 +2828,10 @@ interface VarietyDAO <<@Repository>> {
   + findBySpeciesName(speciesName : String) : List<Variety>
 }
 
+interface AssociationDAO <<@Repository>> {
+  + findBySpeciesName(speciesName : String) : List<Association>
+}
+
 class User <<@Entity>>
 class Plant <<@Entity>>
 class Garden <<@Entity>>
@@ -2711,6 +2841,7 @@ class Notification <<@Entity>>
 class Article <<@Entity>>
 class Species <<@Entity>>
 class Variety <<@Entity>>
+class Association <<@Entity>>
 enum PlantState
 
 UserDAO "1" ..> "0..*" User
@@ -2721,6 +2852,7 @@ NotificationDAO "1" ..> "0..*" Notification
 ArticleDAO "1" ..> "0..*" Article
 SpeciesDAO "1" ..> "0..*" Species
 VarietyDAO "1" ..> "0..*" Variety
+AssociationDAO "1" ..> "0..*" Association
 
 User "1" *-- "0..*" Garden
 User "1" *-- "0..*" Plant
@@ -2760,6 +2892,7 @@ class ProfileService <<@Service>> {
 class RegistryService <<@Service>> {
   + getAllSpecies() : List<SpeciesDTO>
   + getVarietiesBySpecies(speciesName : String) : List<VarietyDTO>
+  + getAssociation(speciesA : String, speciesB : String) : Optional<AssociationDTO>
 }
 
 class PlantService <<@Service>> {
@@ -2805,10 +2938,12 @@ AuthService "1" --> "1" UserDAO
 ProfileService "1" --> "1" UserDAO
 RegistryService "1" --> "1" SpeciesDAO
 RegistryService "1" --> "1" VarietyDAO
+RegistryService "1" --> "1" AssociationDAO
 PlantService "1" --> "1" PlantDAO
 GardenService "1" --> "1" GardenDAO
 GardenService "1" --> "1" AreaDAO
 GardenService "1" --> "1" PlantDAO
+GardenService "1" --> "1" RegistryService
 NotifService "1" --> "1" NotificationDAO
 NotifService "1" --> "1" GardenDAO
 NotifScheduler "1" --> "1" NotifService
