@@ -67,6 +67,15 @@ function plantImage(plantId) {
   return usePlantImage(species).value
 }
 
+const STATE_STROKE_COLORS = {
+  A_PLANTER: '#2c8a3d',
+  A_RECOLTER: '#c0392b',
+}
+
+function plantStrokeColor(state) {
+  return STATE_STROKE_COLORS[state]
+}
+
 function circleClip(ctx, radius) {
   ctx.arc(0, 0, radius, 0, Math.PI * 2, false)
 }
@@ -270,6 +279,14 @@ async function removeSelectedPlant() {
                 @click="selectPlant(plant)"
                 @tap="selectPlant(plant)"
               >
+                <v-circle
+                  :config="{
+                    radius: plantRadius(plant.plantId),
+                    stroke: plantStrokeColor(plant.state),
+                    strokeWidth: 2,
+                    fill: plant.id === selectedGardenPlantId ? '#2c8a3d' : undefined,
+                  }"
+                />
                 <v-group :config="{ clipFunc: (ctx) => circleClip(ctx, plantRadius(plant.plantId)) }">
                   <v-image
                     :config="{
@@ -278,16 +295,10 @@ async function removeSelectedPlant() {
                       height: 2 * plantRadius(plant.plantId),
                       offsetX: plantRadius(plant.plantId),
                       offsetY: plantRadius(plant.plantId),
+                      opacity: plant.state === 'RECOLTEE' ? 0.5 : 1,
                     }"
                   />
                 </v-group>
-                <v-circle
-                  :config="{
-                    radius: plantRadius(plant.plantId),
-                    stroke: plant.id === selectedGardenPlantId ? '#2c8a3d' : '#aa3bff',
-                    strokeWidth: 2,
-                  }"
-                />
               </v-group>
             </v-layer>
           </v-stage>
