@@ -17,7 +17,7 @@ import { usePlantImage } from '../../composables/usePlantImage.js'
 import { useGardenBackground } from '../../composables/useGardenBackground.js'
 import { EDGES, areaToPoints, edgeMidpoint, edgeLength } from '../../utils/areaGeometry.js'
 
-const DEFAULT_PLANT_RADIUS = 10
+const DEFAULT_PLANT_RADIUS = 30
 
 const route = useRoute()
 const gardenId = Number(route.params.id)
@@ -191,7 +191,12 @@ async function removeSelectedPlant() {
           <RouterLink :to="{ name: 'garden-structure', params: { id: gardenId } }">
             Structure du potager
           </RouterLink>
-          <RouterLink :to="{ name: 'garden-list' }">Mes potagers</RouterLink>
+          <RouterLink :to="{ name: 'garden-list' }">
+            Mes potagers
+          </RouterLink>
+          <RouterLink :to="{ name: 'plant-list' }">
+            Mes plantes
+          </RouterLink>
         </nav>
       </div>
 
