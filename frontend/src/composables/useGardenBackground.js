@@ -4,7 +4,7 @@ import { areaToPoints } from '../utils/areaGeometry.js'
 import grassUrl from '../assets/grass.jpg'
 import dirtUrl from '../assets/dirt.jpg'
 
-const GRASS_PATTERN_SCALE = 1
+const GRASS_PATTERN_SCALE = 0.5
 const DIRT_PATTERN_SCALE = 0.5
 
 export function useGardenBackground({ stagePos, scale, stageConfig }) {

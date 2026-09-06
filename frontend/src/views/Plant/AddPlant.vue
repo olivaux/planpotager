@@ -76,6 +76,12 @@ async function submit() {
   <div class="page page-narrow">
     <h1>Ajouter une plante</h1>
 
+    <nav class="garden-nav">
+          <RouterLink :to="{ name: 'plant-list' }">
+            Mes plantes
+          </RouterLink>
+    </nav>
+
     <img :src="speciesImageUrl" :alt="selectedSpecies" class="species-preview" />
 
     <p v-if="submitted" class="success">Plante ajoutée à votre compte.</p>

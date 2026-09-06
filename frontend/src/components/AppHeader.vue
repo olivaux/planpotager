@@ -27,7 +27,7 @@ import logo from '../assets/logo.png'
 }
 
 .app-header-logo img {
-  height: 40px;
+  height: 60px;
   display: block;
 }
 </style>

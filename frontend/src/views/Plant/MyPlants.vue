@@ -33,10 +33,14 @@ async function confirmRemove(plantId) {
   <div class="page page-medium">
     <h1>Mes plantes</h1>
 
+    <nav class="garden-nav">
+          <RouterLink :to="{ name: 'plant-add' }">
+            Ajouter des plantes
+          </RouterLink>
+    </nav>
+    
     <p v-if="error" class="error">{{ error }}</p>
-
     <p v-else-if="plants.length === 0">Aucune plante enregistrée pour l'instant.</p>
-
     <ul v-else class="list-reset">
       <li v-for="plant in plants" :key="plant.id" class="list-card row">
         <span class="plant-info">

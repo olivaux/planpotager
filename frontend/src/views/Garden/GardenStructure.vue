@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   getGarden,
@@ -11,7 +11,7 @@ import {
 } from '../../services/gardenService.js'
 import { useKonvaZoomPan } from '../../composables/useKonvaZoomPan.js'
 import { useGardenBackground } from '../../composables/useGardenBackground.js'
-import { CORNER_KEYS, EDGES, areaToPoints, edgeMidpoint, edgeLength } from '../../utils/areaGeometry.js'
+import { CORNER_KEYS, EDGES, edgeMidpoint, edgeLength } from '../../utils/areaGeometry.js'
 
 const route = useRoute()
 const gardenId = Number(route.params.id)
@@ -21,7 +21,7 @@ const areas = ref([]) // AreaDTO[]
 const loading = ref(true)
 const error = ref(null)
 
-const { stageConfig, stagePos, scale, onWheel } = useKonvaZoomPan({ width: 900, height: 560 })
+const { stageConfig, stagePos, scale, onWheel } = useKonvaZoomPan({ width: 560, height: 560 })
 const { backgroundConfig, areaFillConfig } = useGardenBackground({ stagePos, scale, stageConfig })
 
 // --- Infos potager (nom, coordonnées) ---
@@ -177,7 +177,7 @@ async function removeArea(area) {
                     y: edgeMidpoint(area, keyA, keyB).y,
                     text: edgeLength(area, keyA, keyB),
                     fontSize: 12,
-                    fill: '#6b6375',
+                    fill: '#ffffff',
                   }"
                 />
                 <v-circle

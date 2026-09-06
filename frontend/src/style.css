@@ -157,7 +157,7 @@ h2 {
 .canvas-wrapper {
   border: 1px solid var(--border);
   border-radius: 6px;
-  width: 900px;
+  width: 560px;
   max-width: 100%;
   overflow: hidden;
 }

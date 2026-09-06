@@ -15,7 +15,7 @@ import { getAvailablePlants } from '../../services/plantService.js'
 import { useKonvaZoomPan } from '../../composables/useKonvaZoomPan.js'
 import { usePlantImage } from '../../composables/usePlantImage.js'
 import { useGardenBackground } from '../../composables/useGardenBackground.js'
-import { EDGES, areaToPoints, edgeMidpoint, edgeLength } from '../../utils/areaGeometry.js'
+import { EDGES, edgeMidpoint, edgeLength } from '../../utils/areaGeometry.js'
 
 const DEFAULT_PLANT_RADIUS = 30
 
@@ -30,7 +30,7 @@ const ownedPlants = ref([]) // PlantDTO[], toutes les plantes du compte (placée
 const loading = ref(true)
 const error = ref(null)
 
-const { stageConfig, stagePos, scale, onWheel } = useKonvaZoomPan({ width: 900, height: 560 })
+const { stageConfig, stagePos, scale, onWheel } = useKonvaZoomPan({ width: 560, height: 560 })
 const { backgroundConfig, areaFillConfig } = useGardenBackground({ stagePos, scale, stageConfig })
 
 const plantsById = computed(() => new Map(ownedPlants.value.map((p) => [p.id, p])))
@@ -52,7 +52,7 @@ const associationLines = computed(() =>
       return {
         key: `${link.plantId1}-${link.plantId2}`,
         points: [from.x, from.y, to.x, to.y],
-        stroke: link.positive ? '#2c8a3d' : '#c0392b',
+        stroke: link.positive ? '#3de05b' : '#c0392b',
       }
     })
     .filter((line) => line !== null),
@@ -68,8 +68,8 @@ function plantImage(plantId) {
 }
 
 const STATE_STROKE_COLORS = {
-  A_PLANTER: '#2c8a3d',
-  A_RECOLTER: '#c0392b',
+  A_PLANTER: '#3db2e0',
+  A_RECOLTER: '#d8e03d',
 }
 
 function plantStrokeColor(state) {
@@ -156,7 +156,7 @@ async function changeState(newState) {
     return
   }
   try {
-    await setPlantState(gardenId, selectedPlant.value.id, newState)
+    garden.value = await setPlantState(gardenId, selectedPlant.value.id, newState)
     selectedPlant.value.state = newState
   } catch {
     error.value = "Impossible de changer l'état de cette plante."
@@ -260,7 +260,7 @@ async function removeSelectedPlant() {
                     y: edgeMidpoint(area, keyA, keyB).y,
                     text: edgeLength(area, keyA, keyB),
                     fontSize: 12,
-                    fill: '#6b6375',
+                    fill: '#ffffff',
                   }"
                 />
               </template>

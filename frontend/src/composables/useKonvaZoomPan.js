@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 
 export function useKonvaZoomPan(stageSize) {
-  const scale = ref(1)
+  const scale = ref(1.2)
   const stagePos = ref({ x: 0, y: 0 })
 
   const stageConfig = computed(() => ({
